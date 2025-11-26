@@ -250,7 +250,7 @@ const syllabusData = {
     sections: [
       {
         id: 'gk_1',
-        title: 'General Awareness (10th Std Level)',
+        title: 'General Awareness',
         topics: [
           'HP General Knowledge',
           'Current Affairs',
@@ -339,10 +339,10 @@ const ResourceButton = ({ type, topic }) => {
     label = 'Explore';
     colorClass = 'text-blue-600 bg-blue-50 hover:bg-blue-100 border-blue-200';
   } else if (type === 'notes') {
-    const q = encodeURIComponent(topic);
-    url = `https://nptel.ac.in/courses?search=${q}`;
+    const q = encodeURIComponent(`${topic} filetype:pdf`);
+    url = `https:/www.google.com/search?q=${q}`;
     icon = <FileText className="w-4 h-4" aria-hidden="true" />;
-    label = 'NPTEL';
+    label = 'PDF';
     colorClass = 'text-emerald-600 bg-emerald-50 hover:bg-emerald-100 border-emerald-200';
   }
 
