@@ -16,8 +16,8 @@ import {
   Globe
 } from 'lucide-react';
 
-// import SVG logo as React component (vite-plugin-svgr)
-import { ReactComponent as Brand } from './icons/brand.svg';
+// Import SVG logo as React component via vite-plugin-svgr (?react)
+import Brand from './icons/brand.svg?react';
 
 // Helper: safely clone icon elements and merge className
 const cloneIconWith = (elem, className) => {
