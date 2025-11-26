@@ -339,8 +339,9 @@ const ResourceButton = ({ type, topic }) => {
     label = 'Explore';
     colorClass = 'text-blue-600 bg-blue-50 hover:bg-blue-100 border-blue-200';
   } else if (type === 'notes') {
+    // fixed: proper https:// and prefer explicit filetype:pdf search
     const q = encodeURIComponent(`${topic} filetype:pdf`);
-    url = `https:/www.google.com/search?q=${q}`;
+    url = `https://www.google.com/search?q=${q}`;
     icon = <FileText className="w-4 h-4" aria-hidden="true" />;
     label = 'PDF';
     colorClass = 'text-emerald-600 bg-emerald-50 hover:bg-emerald-100 border-emerald-200';
