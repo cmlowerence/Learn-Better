@@ -1,161 +1,170 @@
+import { 
+  FlaskConical, 
+  Atom, 
+  Calculator, 
+  GraduationCap, 
+  Globe 
+} from 'lucide-react';
+
 export const syllabusData = {
   chemistry: {
     title: "Chemistry",
-    iconName: "FlaskConical",
+    // We now use the imported component directly instead of a string name
+    icon: FlaskConical, 
     color: "text-purple-600",
     bgColor: "bg-purple-100",
     sections: [
       {
         id: "chem_1",
-        title: "Basic & General Chemistry",
-        topics: [
-          "Structure of Atom",
-          "Classification of Elements & Periodicity",
-          "Chemical Bonding & Molecular Structure",
-          "Redox Reactions",
-          "Coordination Compounds",
-          "d- and f- Block Elements",
-          "Biomolecules"
-        ]
-      },
-      {
-        id: "chem_2",
         title: "Physical Chemistry",
         topics: [
+          "Atomic and Molecular Structure",
           "States of Matter (Gaseous, Liquid, Solid)",
-          "Chemical Thermodynamics",
+          "Chemical Thermodynamics & Equilibrium",
           "Chemical and Phase Equilibria",
           "Solutions and Colligative Properties",
-          "Electrochemistry & Electrochemical Cells",
-          "Chemical Kinetics & Enzyme Catalysis",
+          "Electrochemistry and Electrochemical Cells",
+          "Chemical Kinetics and Enzyme Catalysis",
           "Adsorption and Colloidal Solutions",
           "Molecular Spectroscopy"
         ]
       },
       {
-        id: "chem_3",
+        id: "chem_2",
         title: "Organic Chemistry",
         topics: [
           "Stereochemistry & Conformational Analysis",
           "Reaction Mechanisms (Nucleophilic, Electrophilic)",
-          "Name Reactions and Rearrangements",
+          "Elimination Reactions & Rearrangements",
+          "Name Reactions",
           "Qualitative Organic Analysis",
           "Organic Spectroscopy (UV-Visible, IR, NMR)",
           "Hydrocarbons, Haloalkanes, Haloarenes",
-          "Alcohols, Phenols, Ethers",
-          "Aldehydes, Carboxylic Acids, Amines",
-          "Heterocyclic Chemistry & Polymers",
+          "Alcohols, Phenols, Ethers, Aldehydes, Carboxylic Acids, Amines",
+          "Heterocyclic Chemistry & Polymer Chemistry",
           "Natural Products & Biochemistry"
         ]
       },
       {
-        id: "chem_4",
+        id: "chem_3",
         title: "Inorganic Chemistry",
         topics: [
-          "Periodic Table and Properties",
+          "Periodic Table and Periodic Properties",
           "Extraction of Metals and Metallurgy",
-          "VSEPR and Molecular Orbital Theory",
+          "Chemical Bonding (VSEPR and MO Theory)",
           "Main Group Elements (s and p-blocks)",
-          "Transition & Inner-transition Elements",
+          "Transition (d-block) & Inner-transition (f-block) Elements",
+          "Coordination Chemistry",
           "Bioinorganic Chemistry",
-          "Nuclear Chemistry",
-          "Analytical Chemistry"
+          "Nuclear Chemistry & Analytical Chemistry"
         ]
       }
     ]
   },
   physics: {
     title: "Physics",
-    iconName: "Atom",
+    icon: Atom,
     color: "text-blue-600",
     bgColor: "bg-blue-100",
     sections: [
       {
         id: "phy_1",
-        title: "Mechanics & Properties of Matter",
+        title: "Mechanics, Relativity & Properties of Matter",
         topics: [
           "Laws of Motion, Work, Energy and Power",
           "System of Particles and Rotational Motion",
           "Gravitation",
           "Mechanical Properties of Solids & Fluids",
-          "Thermal Properties of Matter",
-          "Thermodynamics & Kinetic Theory of Gases",
-          "Oscillations & Waves"
+          "Coriolis Force & Inertial/Non-inertial Frames",
+          "Special Theory of Relativity (Lorentz, Time Dilation, Mass-Energy)",
+          "Michelson-Morley Experiment"
         ]
       },
       {
         id: "phy_2",
-        title: "Electricity & Magnetism",
+        title: "Thermal & Statistical Physics",
         topics: [
-          "Electrostatics & Electrostatic Potential",
-          "Current Electricity & Ohm's Law",
-          "Magnetic Effect of Current & Magnetism",
-          "Electromagnetic Induction & Alternating Currents",
-          "Maxwell's Equations & EM Waves"
+          "Thermodynamics & Kinetic Theory of Gases",
+          "Statistical Physics (M-B, B-E, F-D Statistics)",
+          "Entropy & Thermodynamic Potentials",
+          "Maxwell's Thermodynamic Relations"
         ]
       },
       {
         id: "phy_3",
-        title: "Optics",
+        title: "Electricity & Magnetism",
         topics: [
-          "Ray Optics and Optical Instruments",
-          "Wave Optics (Interference, Diffraction)",
-          "Interference in Thin Films",
-          "Lasers and Holography (Basic Concepts)"
+          "Electrostatics, Potential, Poisson & Laplace Equations",
+          "Current Electricity, Microscopic Ohm's Law & Hall Effect",
+          "Magnetism, Diamagnetism, Paramagnetism, Ferromagnetism",
+          "Electromagnetic Induction & AC",
+          "Maxwell's Equations & Poynting Vector",
+          "Dielectrics & Polarization"
         ]
       },
       {
         id: "phy_4",
-        title: "Modern Physics & Quantum Mechanics",
+        title: "Optics & Waves",
         topics: [
-          "Dual Nature of Radiation and Matter",
-          "Photo-electric Effect & Compton Scattering",
-          "Heisenberg Uncertainty Principle",
-          "Schrodinger Equation (Time Dependent/Independent)",
-          "Zeeman Effect & Stern-Gerlach Experiment",
-          "Atomic Models & Spin Orbit Coupling"
+          "Oscillations (Damped, Forced, Coupled)",
+          "Interference (Young's Double Slit, Newton's Rings, Thin Films)",
+          "Diffraction (Fraunhofer, Fresnel, Zone Plate)",
+          "Polarization (Malus's Law, Double Refraction, Brewster Law)",
+          "Lasers and Holography"
         ]
       },
       {
         id: "phy_5",
-        title: "Solid State & Electronics",
+        title: "Quantum Mechanics",
         topics: [
-          "Crystal Structure & Brillouin Zones",
-          "Band Theory of Solids",
-          "Superconductivity (BCS Theory)",
-          "Semiconductor Electronics (Diodes, Transistors)",
-          "Digital Electronics (Logic Gates)"
+          "Photo-electric Effect & Compton Scattering",
+          "Heisenberg Uncertainty & Wave-Particle Duality",
+          "Schrodinger Equation (Time Dependent/Independent)",
+          "Zeeman Effect & Stern-Gerlach Experiment",
+          "Spin Orbit Coupling & L-S, J-J Couplings"
         ]
       },
       {
         id: "phy_6",
-        title: "Nuclear & Particle Physics",
+        title: "Solid State & Electronics",
+        topics: [
+          "Crystal Structure, Miller Indices, Brillouin Zones",
+          "Band Theory, Fermi Gas & Specific Heat",
+          "Superconductivity (BCS Theory, Meissner Effect)",
+          "Semiconductors (Diodes, Zener, LED, Solar Cell)",
+          "Transistors (BJT, FET, MOSFET) & Amplifiers",
+          "Digital Electronics & Logic Gates"
+        ]
+      },
+      {
+        id: "phy_7",
+        title: "Nuclear Physics",
         topics: [
           "Nuclear Models & Radioactivity",
           "Nuclear Reactions, Detectors & Accelerators",
           "Elementary Particles & Quarks Model",
-          "Conservation Laws"
+          "Conservation Laws & Particle Symmetries"
         ]
-      ]
+      }
     ]
   },
   maths: {
     title: "Mathematics",
-    iconName: "Calculator",
+    icon: Calculator,
     color: "text-red-600",
     bgColor: "bg-red-100",
     sections: [
       {
         id: "math_1",
-        title: "Algebra & Number Theory",
+        title: "Algebra & Linear Algebra",
         topics: [
           "Sets, Relations, Functions",
           "Complex Numbers & Quadratic Equations",
           "Permutations, Combinations & Binomial Theorem",
           "Sequence & Series (AP, GP, HP)",
-          "Matrices & Determinants",
+          "Matrices, Determinants & System of Linear Equations",
           "Groups, Rings, Fields (Abstract Algebra)",
-          "Vector Spaces & Linear Transformations"
+          "Vector Spaces, Linear Transformations & Eigen Values"
         ]
       },
       {
@@ -163,30 +172,39 @@ export const syllabusData = {
         title: "Calculus & Analysis",
         topics: [
           "Limits, Continuity, Differentiability",
-          "Applications of Derivatives (Maxima/Minima)",
-          "Integration (Definite & Indefinite)",
-          "Differential Equations (ODE & PDE)",
-          "Real Analysis (Sequences & Series of Functions)",
-          "Complex Analysis (Analytic Functions)"
+          "Applications of Derivatives (Maxima/Minima, Mean Value Theorems)",
+          "Integration (Definite/Indefinite) & Area Under Curves",
+          "Partial Differentiation & Jacobians",
+          "Real Analysis (Sequences, Series, Power Series)",
+          "Complex Analysis (Analytic Functions, Cauchy-Riemann)"
         ]
       },
       {
         id: "math_3",
+        title: "Differential Equations",
+        topics: [
+          "ODEs (Homogenous, Linear, Exact)",
+          "Equations of First Order & Higher Degree (Clairaut's Form)",
+          "Linear Equations with Constant/Variable Coefficients",
+          "Partial Differential Equations (Classification)"
+        ]
+      },
+      {
+        id: "math_4",
         title: "Geometry & Vectors",
         topics: [
-          "Co-ordinate Geometry (2D & 3D)",
-          "Conic Sections",
+          "Co-ordinate Geometry (2D Conics & 3D Lines/Planes)",
           "Vector Algebra",
           "Vector Calculus (Gradient, Divergence, Curl)"
         ]
       },
       {
-        id: "math_4",
-        title: "Applied Mathematics",
+        id: "math_5",
+        title: "Numerical Methods & Applied Math",
         topics: [
+          "Numerical Analysis (Newton's Method, Simpson's Rule, Euler's Method)",
           "Statistics (Mean, Variance, Deviation)",
           "Probability & Bayes' Theorem",
-          "Numerical Methods (Root Finding, Integration)",
           "Linear Programming Problems (LPP)"
         ]
       }
@@ -194,7 +212,7 @@ export const syllabusData = {
   },
   bed: {
     title: "B.Ed & Pedagogy",
-    iconName: "GraduationCap",
+    icon: GraduationCap,
     color: "text-emerald-600",
     bgColor: "bg-emerald-100",
     sections: [
@@ -209,20 +227,21 @@ export const syllabusData = {
           "Learning and Teaching",
           "Assessment for Learning",
           "Teaching of Physical Science & Mathematics",
-          "Inclusive School & Gender School Society"
+          "Inclusive School, Gender & Society",
+          "ICT in Teaching-Learning Process"
         ]
       }
     ]
   },
   gk: {
     title: "General Knowledge",
-    iconName: "Globe",
+    icon: Globe,
     color: "text-orange-600",
     bgColor: "bg-orange-100",
     sections: [
       {
         id: "gk_1",
-        title: "General Awareness (10th Std Level)",
+        title: "General Awareness",
         topics: [
           "HP General Knowledge",
           "Current Affairs",
