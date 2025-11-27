@@ -1,5 +1,7 @@
 import React, { useState, useMemo } from 'react';
+import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { syllabusData } from './syllabusData';
+import QuizPage from './QuizPage'; // Import the new page
 import { 
   BookOpen, 
   Search, 
@@ -14,10 +16,10 @@ import {
   FlaskConical, 
   Calculator, 
   GraduationCap, 
-  Globe 
+  Globe,
+  BrainCircuit // New icon for Quiz
 } from 'lucide-react';
 
-// Map icon names from JSON to actual components
 const IconMap = {
   FlaskConical,
   Atom,
@@ -25,6 +27,21 @@ const IconMap = {
   GraduationCap,
   Globe
 };
+
+// --- NAVIGATION WRAPPER ---
+// This is the new root component that sets up routing
+const AppWrapper = () => {
+  return (
+    <Router>
+      <Routes>
+        <Route path="/" element={<App />} />
+        <Route path="/quiz/:topic" element={<QuizPage />} />
+      </Routes>
+    </Router>
+  );
+};
+
+// --- ORIGINAL APP COMPONENTS (Modified) ---
 
 const Header = ({ toggleSidebar }) => (
   <header className="bg-white shadow-sm border-b sticky top-0 z-20">
@@ -74,13 +91,14 @@ const SubjectCard = ({ subjectKey, subject, isActive, onClick }) => {
   );
 };
 
+// Updated ResourceButton to handle Routing for Quiz
 const ResourceButton = ({ type, topic, compact = false }) => {
+  const navigate = useNavigate();
   let url = "";
   let IconComp = null;
   let label = "";
   let colorClass = "";
   
-  // Clean string for search
   const searchQuery = `TGT Non Medical ${topic}`;
 
   if (type === "youtube") {
@@ -98,16 +116,35 @@ const ResourceButton = ({ type, topic, compact = false }) => {
     IconComp = FileText;
     label = "NPTEL";
     colorClass = "text-emerald-600 bg-emerald-50 hover:bg-emerald-100 border-emerald-200";
+  } else if (type === "quiz") {
+    // QUIZ Logic
+    IconComp = BrainCircuit;
+    label = "Quiz";
+    colorClass = "text-purple-600 bg-purple-50 hover:bg-purple-100 border-purple-200";
   }
 
-  // --- COMPACT MODE (For Section Headers) ---
+  // --- COMPACT MODE ---
   if (compact) {
+    if (type === 'quiz') {
+      return (
+        <button 
+          onClick={(e) => {
+             e.stopPropagation();
+             navigate(`/quiz/${encodeURIComponent(topic)}`);
+          }} 
+          className={`p-1.5 rounded-full transition-colors ${colorClass.replace('bg-', 'hover:bg-').split(' ')[0]} hover:bg-opacity-10`}
+          title={`Take AI Quiz on ${topic}`}
+        >
+          <IconComp className="w-4 h-4" />
+        </button>
+      )
+    }
     return (
         <a 
           href={url} 
           target="_blank" 
           rel="noopener noreferrer"
-          onClick={(e) => e.stopPropagation()} // Important: Stop accordion from toggling when clicking button
+          onClick={(e) => e.stopPropagation()}
           className={`p-1.5 rounded-full transition-colors ${colorClass.replace('bg-', 'hover:bg-').split(' ')[0]} hover:bg-opacity-10`}
           title={`Search ${topic} on ${label}`}
         >
@@ -116,7 +153,20 @@ const ResourceButton = ({ type, topic, compact = false }) => {
     );
   }
 
-  // --- NORMAL MODE (For Subtopics) ---
+  // --- NORMAL MODE ---
+  if (type === "quiz") {
+    return (
+      <button
+        onClick={() => navigate(`/quiz/${encodeURIComponent(topic)}`)}
+        className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-medium transition-colors ${colorClass}`}
+        title={`Take Practice Quiz for ${topic}`}
+      >
+        <IconComp className="w-4 h-4" />
+        <span className="hidden sm:inline">{label}</span>
+      </button>
+    );
+  }
+
   return (
     <a
       href={url}
@@ -142,6 +192,7 @@ const TopicItem = ({ topic }) => (
       <ResourceButton type="youtube" topic={topic} />
       <ResourceButton type="notes" topic={topic} />
       <ResourceButton type="google" topic={topic} />
+      <ResourceButton type="quiz" topic={topic} /> {/* Added Quiz Button */}
     </div>
   </div>
 );
@@ -157,10 +208,10 @@ const SectionAccordion = ({ section, defaultOpen }) => {
       >
         <div className="flex items-center gap-3">
             <h3 className="text-lg font-bold text-gray-800">{section.title}</h3>
-            {/* Added Search Buttons for Main Section Title Here */}
             <div className="flex items-center gap-1 ml-2 border-l pl-3">
                 <ResourceButton type="youtube" topic={section.title} compact={true} />
                 <ResourceButton type="google" topic={section.title} compact={true} />
+                <ResourceButton type="quiz" topic={section.title} compact={true} /> {/* Added Compact Quiz Button */}
             </div>
         </div>
         
@@ -190,19 +241,15 @@ const App = () => {
       const results = [];
       Object.entries(syllabusData).forEach(([key, subject]) => {
         subject.sections.forEach(section => {
-          // Check if subtopics match
           const matchingTopics = section.topics.filter(t => 
             t.toLowerCase().includes(searchQuery.toLowerCase())
           );
-          
-          // Check if main title matches
           const titleMatch = section.title.toLowerCase().includes(searchQuery.toLowerCase());
 
           if (matchingTopics.length > 0 || titleMatch) {
             results.push({
               ...section,
               title: `${subject.title}: ${section.title}`,
-              // If title matches, show all topics. If only subtopics match, show only them.
               topics: titleMatch ? section.topics : matchingTopics
             });
           }
@@ -213,7 +260,6 @@ const App = () => {
     return syllabusData[activeSubject].sections;
   }, [activeSubject, searchQuery]);
 
-  // Get active subject data for icon display
   const activeSubjectData = syllabusData[activeSubject];
   const ActiveIcon = IconMap[activeSubjectData.iconName] || BookOpen;
 
@@ -224,7 +270,6 @@ const App = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className="flex flex-col lg:flex-row gap-6">
           
-          {/* Sidebar Navigation */}
           <nav className={`
             fixed inset-y-0 left-0 transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
             lg:relative lg:translate-x-0 lg:w-64 lg:block z-30 bg-gray-50 transition-transform duration-200 ease-in-out
@@ -261,7 +306,6 @@ const App = () => {
             </div>
           </nav>
 
-          {/* Overlay for mobile sidebar */}
           {isSidebarOpen && (
             <div 
               className="fixed inset-0 bg-black bg-opacity-50 z-20 lg:hidden"
@@ -269,9 +313,7 @@ const App = () => {
             />
           )}
 
-          {/* Main Content Area */}
           <main className="flex-1">
-            {/* Search Bar */}
             <div className="relative mb-8">
                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                  <Search className="h-5 w-5 text-gray-400" />
@@ -285,7 +327,6 @@ const App = () => {
                />
             </div>
 
-            {/* Content Header */}
             <div className="mb-6 flex items-center justify-between">
               <div>
                 <h2 className="text-2xl font-bold text-gray-900">
@@ -304,7 +345,6 @@ const App = () => {
               )}
             </div>
 
-            {/* Topics List */}
             <div className="space-y-4 pb-20">
               {displayedContent.length > 0 ? (
                 displayedContent.map((section, idx) => (
@@ -331,5 +371,4 @@ const App = () => {
   );
 };
 
-export default App;
-
+export default AppWrapper;

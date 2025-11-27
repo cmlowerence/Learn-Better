@@ -12,7 +12,9 @@
   "dependencies": {
     "lucide-react": "^0.280.0",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.22.3",
+    "@google/generative-ai": "^0.11.1"
   },
   "devDependencies": {
     "@svgr/rollup": "^6.5.1",
