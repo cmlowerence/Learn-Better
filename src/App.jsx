@@ -115,9 +115,9 @@ const ResourceButton = ({ type, topic, compact = false }) => {
     label = "Search";
     colorClass = "text-blue-600 bg-blue-50 hover:bg-blue-100 border-blue-200";
   } else if (type === "notes") {
-    url = `https://nptel.ac.in/courses?search=${encodeURIComponent(topic)}`;
+    url = `https://www.google.com/search?q=${encodeURIComponent(topic + "filetype:pdf")}`;
     IconComp = FileText;
-    label = "NPTEL";
+    label = "PDF";
     colorClass = "text-emerald-600 bg-emerald-50 hover:bg-emerald-100 border-emerald-200";
   } else if (type === "quiz") {
     // QUIZ Logic
