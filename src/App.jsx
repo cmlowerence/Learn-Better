@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { syllabusData } from './syllabusData';
 import QuizPage from './QuizPage'; // Import the new page
+import NotFound from './pages/NotFound';
 import { 
   BookOpen, 
   Search, 
@@ -36,6 +37,7 @@ const AppWrapper = () => {
       <Routes>
         <Route path="/" element={<App />} />
         <Route path="/quiz/:topic" element={<QuizPage />} />
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </Router>
   );
