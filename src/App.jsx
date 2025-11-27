@@ -18,7 +18,7 @@ import {
   Calculator, 
   GraduationCap, 
   Globe,
-  BrainCircuit
+  BrainCircuit,
   Github
 } from 'lucide-react';
 
