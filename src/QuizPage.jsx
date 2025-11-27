@@ -28,19 +28,53 @@ const QuizPage = () => {
   });
   const [questions, setQuestions] = useState([]);
   const [currentQIndex, setCurrentQIndex] = useState(0);
-  const [userAnswers, setUserAnswers] = useState({}); // { questionIndex: optionIndex }
+  const [userAnswers, setUserAnswers] = useState({}); 
   const [error, setError] = useState('');
+
+  // --- ERROR HANDLING HELPER ---
+  const getFriendlyErrorMessage = (error) => {
+    const msg = error.message || error.toString();
+    
+    // Check for common error patterns
+    if (msg.includes('Failed to fetch') || msg.includes('Network Error')) {
+      return "Unable to connect. Please check your internet connection.";
+    }
+    if (msg.includes('429') || msg.toLowerCase().includes('quota') || msg.toLowerCase().includes('limit')) {
+      return "Server is busy. Please wait a moment and try again.";
+    }
+    if (msg.includes('JSON') || msg.includes('Unexpected token') || msg.includes('syntax')) {
+      return "Received invalid data format. Please try generating the quiz again.";
+    }
+    if (msg.includes('500') || msg.includes('503')) {
+      return "Service temporarily unavailable. Please try reloading the page.";
+    }
+    if (msg.includes('candidate') || msg.includes('blocked')) {
+      return "The AI could not generate a safe response for this topic. Try a different topic.";
+    }
+    
+    // Default fallback
+    return "Something went wrong. Please refresh the page or try again.";
+  };
 
   // --- HANDLERS ---
   const startQuiz = async () => {
     setStep('loading');
     setError('');
+    
     try {
       const data = await generateQuizQuestions(topic, config.count, config.difficulty, config.type);
+      
+      // Safety check for empty data
+      if (!data || data.length === 0) {
+        throw new Error("No questions returned");
+      }
+
       setQuestions(data);
       setStep('quiz');
     } catch (err) {
-      setError(err.message);
+      console.error("Quiz Generation Failed:", err); // Keep detailed error in console for developers
+      const friendlyMsg = getFriendlyErrorMessage(err); // Show simple message to user
+      setError(friendlyMsg);
       setStep('config');
     }
   };
@@ -98,8 +132,8 @@ const QuizPage = () => {
 
           <div className="p-8">
             {error && (
-              <div className="mb-6 p-4 bg-red-50 text-red-700 text-sm rounded-xl border border-red-100 flex items-start gap-3">
-                <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+              <div className="mb-6 p-4 bg-red-50 text-red-700 text-sm font-medium rounded-xl border border-red-100 flex items-center gap-3 animate-fade-in-down">
+                <AlertCircle className="w-5 h-5 flex-shrink-0 text-red-500" />
                 <span>{error}</span>
               </div>
             )}
@@ -187,8 +221,8 @@ const QuizPage = () => {
              <div className="absolute inset-0 bg-indigo-100 rounded-full animate-ping opacity-75"></div>
              <Loader2 className="w-16 h-16 text-indigo-600 animate-spin relative z-10" />
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Loading Quiz...</h2>
-          <p className="text-gray-500">Picking {config.count} {config.difficulty} level questions for you.</p>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Generating Quiz...</h2>
+          <p className="text-gray-500">Gemini AI is crafting {config.count} {config.difficulty} level questions for you.</p>
         </div>
       </div>
     );
@@ -381,5 +415,3 @@ const QuizPage = () => {
 };
 
 export default QuizPage;
-
-
