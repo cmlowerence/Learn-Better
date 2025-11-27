@@ -9,7 +9,6 @@ import {
 export const syllabusData = {
   chemistry: {
     title: "Chemistry",
-    // We now use the imported component directly instead of a string name
     icon: FlaskConical, 
     color: "text-purple-600",
     bgColor: "bg-purple-100",
@@ -243,13 +242,13 @@ export const syllabusData = {
         id: "gk_1",
         title: "General Awareness",
         topics: [
-          "HP General Knowledge",
-          "Current Affairs",
-          "Everyday Science",
+          "HP General Knowledge (Moderate)",
+          "Current Affairs (Last 1 year)",
+          "Everyday Science (10th level)",
           "Logical Reasoning",
           "Social Science",
-          "General English",
-          "General Hindi"
+          "General English (10th level)",
+          "General Hindi (10th level)"
         ]
       }
     ]
