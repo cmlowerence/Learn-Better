@@ -1,5 +1,5 @@
 // REPLACE THIS STRING WITH YOUR ACTUAL API KEY
-const API_KEY = "AIzaSyBkNSF0tybE11ODtK-xMQl-h6R4sksdtjM"; 
+const API_KEY = "none"; 
 
 async function listModels() {
   const url = `https://generativelanguage.googleapis.com/v1beta/models?key=${API_KEY}`;
