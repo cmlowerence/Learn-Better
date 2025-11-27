@@ -221,8 +221,8 @@ const QuizPage = () => {
              <div className="absolute inset-0 bg-indigo-100 rounded-full animate-ping opacity-75"></div>
              <Loader2 className="w-16 h-16 text-indigo-600 animate-spin relative z-10" />
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Generating Quiz...</h2>
-          <p className="text-gray-500">Gemini AI is crafting {config.count} {config.difficulty} level questions for you.</p>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">The Alchemist Is Concocting The Quiz...</h2>
+          <p className="text-gray-500">Behold... {config.count} questions of {config.difficulty} level on your way...</p>
         </div>
       </div>
     );
