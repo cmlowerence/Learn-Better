@@ -18,7 +18,8 @@ import {
   Calculator, 
   GraduationCap, 
   Globe,
-  BrainCircuit // New icon for Quiz
+  BrainCircuit
+  Github
 } from 'lucide-react';
 
 const IconMap = {
@@ -365,6 +366,25 @@ const App = () => {
                   <p className="mt-1 text-sm text-gray-500">Try adjusting your search query.</p>
                 </div>
               )}
+            </div>
+            <div className="mt-auto py-8 border-t border-gray-200">
+              <div className="flex flex-col items-center justify-center gap-2">
+                <p className="text-sm text-gray-500">
+                  Contribution made by <span className="font-semibold text-gray-800">Chudamani Lawrence</span>
+                </p>
+                
+                <a 
+                  href="https://github.com/cmlowerence" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="group flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-gray-200 shadow-sm hover:shadow-md hover:border-indigo-300 transition-all duration-200"
+                >
+                  <Github className="w-4 h-4 text-gray-600 group-hover:text-indigo-600 transition-colors" />
+                  <span className="text-xs font-medium text-gray-600 group-hover:text-indigo-600 transition-colors">
+                    github.com/cmlowerence
+                  </span>
+                </a>
+              </div>
             </div>
           </main>
         </div>
