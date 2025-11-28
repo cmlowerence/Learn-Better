@@ -52,13 +52,18 @@ const QuizPage = () => {
 
   const handleSpeak = (text, id) => {
     if (!('speechSynthesis' in window)) return;
+    
+    // Clear previous audio
     window.speechSynthesis.cancel();
-    setAudioErrorId(null);
-
+    // Do NOT clear error state globally here, only if starting new valid audio
+    
     if (activeAudioId === id) {
       setActiveAudioId(null);
       return;
     }
+
+    // Reset error for THIS specific new attempt
+    setAudioErrorId(null);
 
     const detectedLang = detectLanguage(text);
     
@@ -66,7 +71,8 @@ const QuizPage = () => {
     const voice = availableVoices.find(v => v.lang.startsWith(detectedLang)) || 
                   availableVoices.find(v => v.lang.includes(detectedLang.split('-')[0]));
 
-    // Error: If non-English text has no supported voice, show error
+    // --- FIX: Strict Error Handling ---
+    // Only trigger error if we truly cannot find a voice for a non-English text
     if (!voice && detectedLang !== 'en-US') {
        if(availableVoices.length > 0) {
           setAudioErrorId(id);
@@ -83,7 +89,15 @@ const QuizPage = () => {
     }
 
     utterance.onend = () => setActiveAudioId(null);
-    utterance.onerror = () => {
+    
+    // --- FIX: Ignore Interrupted Error ---
+    utterance.onerror = (event) => {
+        // If the error is simply that we cancelled it (interrupted), do NOT show red icon
+        if (event.error === 'interrupted' || event.error === 'canceled') {
+            setActiveAudioId(null);
+            return; 
+        }
+        // Genuine error
         setActiveAudioId(null);
         setAudioErrorId(id);
     };

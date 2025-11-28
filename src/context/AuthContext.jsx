@@ -38,7 +38,6 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('tgt_current_user');
   };
 
-  // UPDATED: Now accepts questions and userAnswers
   const saveQuizResult = (topic, score, total, questions = [], userAnswers = {}) => {
     if (!user) return;
     
@@ -72,25 +71,25 @@ export const AuthProvider = ({ children }) => {
     
     localStorage.setItem(summaryKey, JSON.stringify([newSummaryEntry, ...currentSummary]));
 
-    // 3. Save Detailed History (For Revision - Last 10 Per Subject)
+    // 3. Save Detailed History (For Revision - Last 10 Quizzes Per Subject)
     const detailedKey = `tgt_detailed_history_${user.username}`;
     let detailedHistory = JSON.parse(localStorage.getItem(detailedKey) || '[]');
 
     const newDetailedEntry = {
-      id: Date.now(), // Unique ID
+      id: Date.now(),
       timestamp: new Date().toISOString(),
       topic,
-      subjectKey, // Important for filtering
+      subjectKey, 
       score,
       total,
-      questions,    // Full question data
-      userAnswers   // User choices
+      questions,    
+      userAnswers   
     };
 
     // Add new entry
     detailedHistory.push(newDetailedEntry);
 
-    // Filter logic: Enforce Max 10 per Subject
+    // Filter logic: Enforce Max 10 Quizzes per Subject
     const subjectEntries = detailedHistory.filter(entry => entry.subjectKey === subjectKey);
     
     if (subjectEntries.length > 10) {
@@ -112,8 +111,12 @@ export const AuthProvider = ({ children }) => {
 
   const getStudentStats = () => {
     if (!user) return null;
-    const storageKey = `tgt_progress_${user.username}`;
-    const history = JSON.parse(localStorage.getItem(storageKey) || '[]');
+    
+    const summaryKey = `tgt_progress_${user.username}`;
+    const detailedKey = `tgt_detailed_history_${user.username}`;
+    
+    const history = JSON.parse(localStorage.getItem(summaryKey) || '[]');
+    const detailedHistory = JSON.parse(localStorage.getItem(detailedKey) || '[]');
 
     // 1. Calculate Overall Efficiency 
     const bestScoresByTopic = {};
@@ -129,7 +132,7 @@ export const AuthProvider = ({ children }) => {
       ? Math.round(totalEfficiencyScore / uniqueTopicsAttempted) 
       : 0;
 
-    // 2. Calculate Subject-wise Progress
+    // 2. Calculate Subject-wise Progress & Attach Recent History
     const subjectProgress = {};
     
     Object.entries(syllabusData).forEach(([key, data]) => {
@@ -139,6 +142,12 @@ export const AuthProvider = ({ children }) => {
       const attemptedTopics = allTopics.filter(t => bestScoresByTopic[t] !== undefined);
       const completedCount = attemptedTopics.length;
       
+      // Get the last 10 quizzes for this specific subject
+      // Sort newest first
+      const subjectSpecificHistory = detailedHistory
+        .filter(h => h.subjectKey === key)
+        .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
       subjectProgress[key] = {
         title: data.title,
         total: totalTopics,
@@ -146,7 +155,9 @@ export const AuthProvider = ({ children }) => {
         remaining: totalTopics - completedCount,
         percentComplete: totalTopics > 0 ? Math.round((completedCount / totalTopics) * 100) : 0,
         color: data.color,
-        bgColor: data.bgColor
+        bgColor: data.bgColor,
+        // THIS IS THE KEY FIELD THE VIEWER NEEDS
+        recentAttempts: subjectSpecificHistory
       };
     });
 
