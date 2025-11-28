@@ -245,7 +245,7 @@ const QuizPage = () => {
                 className="w-full mt-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-extrabold py-4 sm:py-5 rounded-2xl shadow-xl shadow-indigo-200 transform hover:-translate-y-1 transition-all duration-200 flex items-center justify-center gap-3 group text-base sm:text-lg"
               >
                 <BrainCircuit className="w-5 h-5 sm:w-6 sm:h-6 group-hover:animate-pulse" /> 
-                Start AI Quiz
+                Start Quiz
               </button>
             </div>
           </div>
