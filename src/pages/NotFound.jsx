@@ -1,5 +1,6 @@
 // src/pages/NotFound.jsx
 import React from 'react';
+import SEO from '../components/SEO'; 
 import { useNavigate } from 'react-router-dom';
 import { Home, MoveLeft, FileQuestion, SearchX } from 'lucide-react';
 
@@ -8,6 +9,7 @@ const NotFound = () => {
 
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-gray-50 relative overflow-hidden font-sans">
+      <SEO title="404 Not Found" description="The page you are looking for does not exist." />
       
       {/* --- DECORATIVE BACKGROUND BLOBS --- */}
       {/* Purple Blob */}

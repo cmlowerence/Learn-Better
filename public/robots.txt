@@ -1,4 +1,9 @@
 User-agent: *
 Allow: /
 
+# Prevent Google from indexing user-specific or gated pages
+Disallow: /history
+Disallow: /leaderboard
+Disallow: /account
+
 Sitemap: https://learn-next-level.vercel.app/sitemap.xml

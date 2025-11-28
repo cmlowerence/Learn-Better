@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import SEO from '../components/SEO'; 
 import { Lock, User, ArrowRight, Atom, Sparkles, UserX } from 'lucide-react';
 
 const LoginPage = () => {
@@ -22,6 +23,10 @@ const LoginPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-900 flex items-center justify-center p-4 relative overflow-hidden font-sans">
+      <SEO 
+        title="Login" 
+        description="Secure access portal for TGT Explorer students." 
+      />
       
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0">
         <div className="absolute top-1/4 left-1/4 w-[600px] h-[600px] bg-indigo-600 rounded-full mix-blend-screen filter blur-[120px] opacity-20 animate-pulse"></div>

@@ -5,7 +5,69 @@
       <changefreq>weekly</changefreq>
    </url>
    <url>
-      <loc>https://learn-next-level.vercel.app/leaderboard</loc>
+      <loc>https://learn-next-level.vercel.app/login</loc>
+      <priority>0.5</priority>
+      <changefreq>yearly</changefreq>
+   </url>
+
+   <url>
+      <loc>https://learn-next-level.vercel.app/quiz/Mechanics,%20Relativity%20%26%20Properties%20of%20Matter</loc>
+      <priority>0.8</priority>
+      <changefreq>monthly</changefreq>
+   </url>
+   <url>
+      <loc>https://learn-next-level.vercel.app/quiz/Thermal%20%26%20Statistical%20Physics</loc>
       <priority>0.8</priority>
    </url>
-   </urlset>
+   <url>
+      <loc>https://learn-next-level.vercel.app/quiz/Electricity%20%26%20Magnetism</loc>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <loc>https://learn-next-level.vercel.app/quiz/Optics%20%26%20Waves</loc>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <loc>https://learn-next-level.vercel.app/quiz/Quantum%20Mechanics</loc>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <loc>https://learn-next-level.vercel.app/quiz/Nuclear%20Physics</loc>
+      <priority>0.8</priority>
+   </url>
+
+   <url>
+      <loc>https://learn-next-level.vercel.app/quiz/Physical%20Chemistry</loc>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <loc>https://learn-next-level.vercel.app/quiz/Organic%20Chemistry</loc>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <loc>https://learn-next-level.vercel.app/quiz/Inorganic%20Chemistry</loc>
+      <priority>0.8</priority>
+   </url>
+
+   <url>
+      <loc>https://learn-next-level.vercel.app/quiz/Calculus%20%26%20Analysis</loc>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <loc>https://learn-next-level.vercel.app/quiz/Algebra%20%26%20Linear%20Algebra</loc>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <loc>https://learn-next-level.vercel.app/quiz/Differential%20Equations</loc>
+      <priority>0.8</priority>
+   </url>
+
+   <url>
+      <loc>https://learn-next-level.vercel.app/quiz/General%20Awareness</loc>
+      <priority>0.7</priority>
+   </url>
+   <url>
+      <loc>https://learn-next-level.vercel.app/quiz/B.Ed%20Core%20Subjects</loc>
+      <priority>0.7</priority>
+   </url>
+</urlset>

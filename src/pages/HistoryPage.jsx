@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
+import SEO from '../components/SEO'; 
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, History, BookOpen, AlertCircle } from 'lucide-react';
 import QuizHistoryViewer from '../components/quiz/QuizHistoryViewer'; 
@@ -29,6 +30,10 @@ const HistoryPage = () => {
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] font-sans">
+      <SEO 
+        title="Quiz History" 
+        description="Review your past quiz attempts and answers for HPRCA TGT preparation." 
+      />
       
       {/* --- FIXED HEADER CONTAINER START --- */}
       {/* Changed to 'fixed' to ensure it stays on top. Added z-40 to layer above content. */}

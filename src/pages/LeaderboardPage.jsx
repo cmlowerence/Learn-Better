@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import SEO from '../components/SEO'; 
 import { useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, Trophy, Calendar, Target, Zap, 
@@ -37,6 +38,10 @@ const LeaderboardPage = () => {
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] p-4 sm:p-8 font-sans">
+      <SEO 
+        title="My Performance Matrix" 
+        description="Track your TGT exam preparation progress, efficiency scores, and topic mastery." 
+      />
       
       {/* Avatar Selection Modal */}
       <AvatarSelectionModal 

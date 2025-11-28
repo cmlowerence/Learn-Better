@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { generateQuizQuestions } from './services/gemini';
 import { useAuth } from './context/AuthContext';
-import { Bot, MessageSquare, ExternalLink, X } from 'lucide-react';
+import SEO from './components/SEO';
 
-// Import sub-components
+import { Bot, MessageSquare, ExternalLink, X } from 'lucide-react';
 import QuizConfig from './components/quiz/QuizConfig';
 import QuizLoading from './components/quiz/QuizLoading';
 import QuizGame from './components/quiz/QuizGame';
@@ -182,6 +182,11 @@ const QuizPage = () => {
 
   return (
     <>
+      <SEO 
+        title={`${decodeURIComponent(topic)} Quiz`}
+        description={`Take a free AI-generated quiz on ${decodeURIComponent(topic)} for HPRCA TGT Non-Medical preparation. Test your knowledge now.`}
+        keywords={`Quiz, ${decodeURIComponent(topic)}, MCQ, Practice, TGT Exam`}
+      />
       {showAIModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-md animate-in fade-in duration-300">
           <div className="bg-white rounded-[2rem] shadow-2xl max-w-sm w-full p-8 relative animate-in zoom-in-95 duration-300 border border-white/20">
