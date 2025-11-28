@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, Trophy, Calendar, Target, Zap, 
-  BarChart3, CheckCircle2, CircleDashed, Lock
+  BarChart3, CheckCircle2, CircleDashed, Lock, History, ChevronRight
 } from 'lucide-react';
 
 const LeaderboardPage = () => {
@@ -129,11 +129,19 @@ const LeaderboardPage = () => {
 
           {/* Right Column: Recent Activity History */}
           <div className="space-y-8">
-            <h2 className="text-2xl font-black text-gray-900 flex items-center gap-3">
-              <Zap className="w-6 h-6 text-yellow-500" /> Recent Attempts
-            </h2>
+            <div className="flex items-center justify-between">
+               <h2 className="text-2xl font-black text-gray-900 flex items-center gap-3">
+                 <Zap className="w-6 h-6 text-yellow-500" /> Recent
+               </h2>
+               <button 
+                 onClick={() => navigate('/history')}
+                 className="group flex items-center gap-1 text-xs font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50 px-3 py-1.5 rounded-lg transition-all"
+               >
+                 Detailed History <ChevronRight className="w-3 h-3 transition-transform group-hover:translate-x-0.5" />
+               </button>
+            </div>
             
-            <div className="bg-white rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden">
+            <div className="bg-white rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden relative">
               {stats.history.length === 0 ? (
                 <div className="p-12 text-center">
                   <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -143,7 +151,8 @@ const LeaderboardPage = () => {
                   <button onClick={() => navigate('/')} className="mt-6 text-indigo-600 font-black hover:text-indigo-700 underline underline-offset-4 decoration-2">Start Learning</button>
                 </div>
               ) : (
-                <div className="divide-y divide-gray-50 max-h-[600px] overflow-y-auto custom-scrollbar">
+                <>
+                <div className="divide-y divide-gray-50 max-h-[600px] overflow-y-auto custom-scrollbar pb-16">
                   {stats.history.map((attempt) => (
                     <div key={attempt.id} className="p-6 hover:bg-gray-50 transition-colors group">
                       <div className="flex justify-between items-start mb-2">
@@ -167,6 +176,16 @@ const LeaderboardPage = () => {
                     </div>
                   ))}
                 </div>
+                {/* Fixed Footer for History Link */}
+                <div className="absolute bottom-0 left-0 right-0 p-4 bg-white/90 backdrop-blur border-t border-gray-100">
+                   <button 
+                     onClick={() => navigate('/history')}
+                     className="w-full py-3 bg-gray-900 text-white rounded-xl font-bold text-sm shadow-lg hover:bg-black transition-all flex items-center justify-center gap-2"
+                   >
+                     <History className="w-4 h-4" /> View Questions & Answers
+                   </button>
+                </div>
+                </>
               )}
             </div>
           </div>
@@ -177,5 +196,3 @@ const LeaderboardPage = () => {
 };
 
 export default LeaderboardPage;
-
-

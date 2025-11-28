@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import MathText from '../MathText';
 import { 
-  History, ChevronDown, ChevronUp, CheckCircle, 
-  XCircle, Calendar, Trophy 
+  History, ChevronDown, ChevronUp, CheckCircle2, 
+  XCircle, Calendar, Trophy, Circle 
 } from 'lucide-react';
 
 const QuizHistoryViewer = ({ recentAttempts, subjectTitle }) => {
@@ -66,55 +66,66 @@ const QuizHistoryViewer = ({ recentAttempts, subjectTitle }) => {
             {/* Detailed Questions View */}
             {isExpanded && (
               <div className="border-t border-gray-100 bg-gray-50/50 p-4 sm:p-6 space-y-6 animate-in slide-in-from-top-2 duration-200">
-                {attempt.questions.map((q, idx) => {
-                  // Fallback for older data where userAnswers might be structured differently
-                  const userAnswerIndex = attempt.userAnswers ? attempt.userAnswers[idx] : undefined;
-                  const isCorrect = userAnswerIndex === q.correctIndex;
-                  const hasAnswered = userAnswerIndex !== undefined;
-
+                {attempt.questions.map((q, qIdx) => {
+                  const userAnswerIndex = attempt.userAnswers ? attempt.userAnswers[qIdx] : undefined;
+                  const isAnswerCorrect = userAnswerIndex === q.correctIndex;
+                  
                   return (
-                    <div key={idx} className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm relative overflow-hidden">
+                    <div key={qIdx} className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm relative overflow-hidden">
                       {/* Status Stripe */}
-                      <div className={`absolute left-0 top-0 bottom-0 w-1 ${isCorrect ? 'bg-emerald-500' : 'bg-rose-500'}`} />
+                      <div className={`absolute left-0 top-0 bottom-0 w-1 ${isAnswerCorrect ? 'bg-emerald-500' : 'bg-rose-500'}`} />
                       
-                      <div className="flex items-start gap-3 mb-3">
-                        <span className="bg-gray-100 text-gray-600 font-bold px-2 py-0.5 rounded text-xs mt-1 flex-shrink-0">Q{idx + 1}</span>
-                        <div className="font-medium text-gray-900 text-sm leading-relaxed w-full">
+                      {/* Question Text */}
+                      <div className="flex items-start gap-3 mb-4">
+                        <span className="bg-gray-100 text-gray-600 font-bold px-2 py-0.5 rounded text-xs mt-1 flex-shrink-0">Q{qIdx + 1}</span>
+                        <div className="font-bold text-gray-900 text-sm sm:text-base leading-relaxed w-full">
                           <MathText text={q.question} />
                         </div>
                       </div>
 
-                      <div className="space-y-3 pl-0 sm:pl-9">
-                        {/* User Answer */}
-                        <div className={`p-3 rounded-lg text-sm border ${isCorrect ? 'bg-emerald-50 border-emerald-100' : 'bg-rose-50 border-rose-100'}`}>
-                          <div className="flex items-center gap-1.5 mb-1">
-                            {isCorrect ? <CheckCircle className="w-3.5 h-3.5 text-emerald-600" /> : <XCircle className="w-3.5 h-3.5 text-rose-600" />}
-                            <span className={`text-[10px] font-bold uppercase ${isCorrect ? 'text-emerald-700' : 'text-rose-700'}`}>You Selected</span>
-                          </div>
-                          <div className="text-gray-800 font-medium">
-                             {hasAnswered ? <MathText text={q.options[userAnswerIndex]} /> : <span className="text-gray-400 italic">Skipped / No Data</span>}
-                          </div>
-                        </div>
+                      {/* Options List */}
+                      <div className="space-y-2 mb-4 pl-0 sm:pl-9">
+                        {q.options.map((opt, optIdx) => {
+                          const isSelected = userAnswerIndex === optIdx;
+                          const isCorrectOption = q.correctIndex === optIdx;
+                          
+                          // Determine Styling
+                          let containerClass = "border-gray-100 bg-white text-gray-600 hover:bg-gray-50"; // Default
+                          let icon = <Circle className="w-4 h-4 text-gray-300" />;
 
-                        {/* Correct Answer (if wrong) */}
-                        {!isCorrect && (
-                          <div className="p-3 rounded-lg text-sm border border-gray-200 bg-white">
-                            <div className="flex items-center gap-1.5 mb-1">
-                              <CheckCircle className="w-3.5 h-3.5 text-gray-400" />
-                              <span className="text-[10px] font-bold uppercase text-gray-500">Correct Answer</span>
+                          if (isCorrectOption) {
+                            containerClass = "border-emerald-200 bg-emerald-50 text-emerald-900";
+                            icon = <CheckCircle2 className="w-4 h-4 text-emerald-600" />;
+                          } else if (isSelected && !isCorrectOption) {
+                             containerClass = "border-rose-200 bg-rose-50 text-rose-900";
+                             icon = <XCircle className="w-4 h-4 text-rose-600" />;
+                          }
+
+                          return (
+                            <div 
+                              key={optIdx} 
+                              className={`flex items-center gap-3 p-3 rounded-lg border text-sm font-medium transition-colors ${containerClass}`}
+                            >
+                              <div className="flex-shrink-0 mt-0.5">{icon}</div>
+                              <div className="flex-1"><MathText text={opt} /></div>
+                              {isSelected && (
+                                <span className="text-[10px] uppercase font-bold tracking-wider opacity-60">
+                                  {isCorrectOption ? '(You)' : '(You)'}
+                                </span>
+                              )}
                             </div>
-                            <div className="text-gray-800 font-medium">
-                               <MathText text={q.options[q.correctIndex]} />
-                            </div>
-                          </div>
-                        )}
-                        
-                        {/* Explanation Preview */}
-                        <div className="pt-2">
-                           <p className="text-xs text-gray-500 italic border-l-2 border-gray-200 pl-3">
-                              <span className="font-semibold not-italic text-gray-600">Why?</span> <MathText text={q.explanation} />
-                           </p>
-                        </div>
+                          );
+                        })}
+                      </div>
+
+                      {/* Explanation */}
+                      <div className="pl-0 sm:pl-9 pt-2 border-t border-gray-50 mt-2">
+                         <div className="bg-indigo-50/50 p-3 rounded-lg border border-indigo-100/50">
+                            <p className="text-xs text-indigo-900 font-medium leading-relaxed">
+                              <span className="font-bold text-indigo-600 uppercase tracking-wider text-[10px] block mb-1">Explanation:</span> 
+                              <MathText text={q.explanation} />
+                            </p>
+                         </div>
                       </div>
                     </div>
                   );

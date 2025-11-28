@@ -4,6 +4,7 @@ import { syllabusData } from './syllabusData';
 import QuizPage from './QuizPage';
 import NotFound from './pages/NotFound';
 import LoginPage from './pages/LoginPage';
+import HistoryPage from './pages/HistoryPage';
 import LeaderboardPage from './pages/LeaderboardPage';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { 
@@ -63,6 +64,7 @@ const AppWrapper = () => {
           <Route path="/" element={<App />} />
           <Route path="/quiz/:topic" element={<QuizPage />} />
           <Route path="/leaderboard" element={<LeaderboardPage />} />
+          <Route path="/history" element={<HistoryPage />} /> 
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Router>
