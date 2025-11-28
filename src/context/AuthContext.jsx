@@ -38,14 +38,11 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('tgt_current_user');
   };
 
-  const saveQuizResult = (topic, score, total) => {
-    // If guest, do not save to persistent storage
+  // UPDATED: Now accepts questions and userAnswers
+  const saveQuizResult = (topic, score, total, questions = [], userAnswers = {}) => {
     if (!user) return;
     
-    const storageKey = `tgt_progress_${user.username}`;
-    const currentHistory = JSON.parse(localStorage.getItem(storageKey) || '[]');
-    
-    // Reverse lookup to find which subject this topic belongs to
+    // 1. Identify Subject
     let subjectKey = 'unknown';
     let subjectName = 'General';
     
@@ -58,7 +55,11 @@ export const AuthProvider = ({ children }) => {
       });
     });
 
-    const newEntry = {
+    // 2. Save Summary Stats (For Graphs - Keep All)
+    const summaryKey = `tgt_progress_${user.username}`;
+    const currentSummary = JSON.parse(localStorage.getItem(summaryKey) || '[]');
+
+    const newSummaryEntry = {
       id: Date.now(),
       topic,
       subjectKey,
@@ -69,8 +70,42 @@ export const AuthProvider = ({ children }) => {
       date: new Date().toISOString()
     };
     
-    const updatedHistory = [newEntry, ...currentHistory];
-    localStorage.setItem(storageKey, JSON.stringify(updatedHistory));
+    localStorage.setItem(summaryKey, JSON.stringify([newSummaryEntry, ...currentSummary]));
+
+    // 3. Save Detailed History (For Revision - Last 10 Per Subject)
+    const detailedKey = `tgt_detailed_history_${user.username}`;
+    let detailedHistory = JSON.parse(localStorage.getItem(detailedKey) || '[]');
+
+    const newDetailedEntry = {
+      id: Date.now(), // Unique ID
+      timestamp: new Date().toISOString(),
+      topic,
+      subjectKey, // Important for filtering
+      score,
+      total,
+      questions,    // Full question data
+      userAnswers   // User choices
+    };
+
+    // Add new entry
+    detailedHistory.push(newDetailedEntry);
+
+    // Filter logic: Enforce Max 10 per Subject
+    const subjectEntries = detailedHistory.filter(entry => entry.subjectKey === subjectKey);
+    
+    if (subjectEntries.length > 10) {
+      // Sort by timestamp (oldest first)
+      subjectEntries.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+      
+      // Calculate how many to remove
+      const itemsToRemoveCount = subjectEntries.length - 10;
+      const idsToRemove = subjectEntries.slice(0, itemsToRemoveCount).map(e => e.id);
+      
+      // Remove oldest entries for this subject from main array
+      detailedHistory = detailedHistory.filter(entry => !idsToRemove.includes(entry.id));
+    }
+
+    localStorage.setItem(detailedKey, JSON.stringify(detailedHistory));
   };
 
   // --- STATISTICS ENGINE ---
@@ -98,11 +133,9 @@ export const AuthProvider = ({ children }) => {
     const subjectProgress = {};
     
     Object.entries(syllabusData).forEach(([key, data]) => {
-      // Flatten all topics for this subject
       const allTopics = data.sections.flatMap(s => s.topics);
       const totalTopics = allTopics.length;
       
-      // Find which of these topics have been attempted by user
       const attemptedTopics = allTopics.filter(t => bestScoresByTopic[t] !== undefined);
       const completedCount = attemptedTopics.length;
       
