@@ -14,6 +14,6 @@ root.render(
     <AppWrapper />
     <Analytics />
     <SpeedInsights />
-    <HelmetProvider/>
+    </HelmetProvider>
   </React.StrictMode>
 );
