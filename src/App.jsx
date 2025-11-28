@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
+import { HelmetProvider } from 'react-helmet-async'; // SEO: Provider
 import { syllabusData } from './syllabusData';
 import QuizPage from './QuizPage';
 import NotFound from './pages/NotFound';
@@ -8,12 +9,13 @@ import LeaderboardPage from './pages/LeaderboardPage';
 import HistoryPage from './pages/HistoryPage';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Header from './components/layout/Header';
+import SEO from './components/SEO'; // SEO: Component
 import { 
   BookOpen, Search, Youtube, FileText, ChevronDown, 
   BrainCircuit, Github, X 
 } from 'lucide-react';
 
-// --- GLOBAL FONT & STYLE INJECTION ---
+// --- GLOBAL STYLES ---
 const GlobalStyles = () => (
   <style>{`
     @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
@@ -28,7 +30,6 @@ const GlobalStyles = () => (
       font-family: 'Outfit', sans-serif;
     }
 
-    /* Custom Scrollbar for a cleaner look */
     ::-webkit-scrollbar {
       width: 8px;
     }
@@ -45,35 +46,41 @@ const GlobalStyles = () => (
   `}</style>
 );
 
-// --- HELPER COMPONENTS (Dashboard Specific) ---
+// --- HELPER COMPONENTS ---
 
 const ResourceButton = ({ type, topic, compact = false }) => {
   const navigate = useNavigate();
+  // SEO: Descriptive search queries
+  const searchQuery = `HPRCA TGT Non Medical ${topic}`; 
+
   let url = "";
   let IconComp = null;
   let label = "";
   let colorClass = "";
-  
-  const searchQuery = `TGT Non Medical ${topic}`;
+  let ariaLabel = "";
 
   if (type === "youtube") {
-    url = `https://www.youtube.com/results?search_query=${encodeURIComponent(searchQuery)}`;
+    url = `https://www.youtube.com/results?search_query=${encodeURIComponent(searchQuery + " lectures")}`;
     IconComp = Youtube;
     label = "Watch";
+    ariaLabel = `Watch Youtube lectures for ${topic}`;
     colorClass = "text-red-600 bg-red-50 hover:bg-red-100 border-red-200";
   } else if (type === "google") {
-    url = `https://www.google.com/search?q=${encodeURIComponent(searchQuery + " study material pdf")}`;
+    url = `https://www.google.com/search?q=${encodeURIComponent(searchQuery + " study material notes pdf")}`;
     IconComp = Search;
     label = "Search";
+    ariaLabel = `Google search for ${topic}`;
     colorClass = "text-blue-600 bg-blue-50 hover:bg-blue-100 border-blue-200";
   } else if (type === "notes") {
-    url = `https://www.google.com/search?q=${encodeURIComponent(topic + "filetype:pdf")}`;
+    url = `https://www.google.com/search?q=${encodeURIComponent(topic + " formula sheet filetype:pdf")}`;
     IconComp = FileText;
     label = "PDF";
+    ariaLabel = `Download PDF notes for ${topic}`;
     colorClass = "text-emerald-600 bg-emerald-50 hover:bg-emerald-100 border-emerald-200";
   } else if (type === "quiz") {
     IconComp = BrainCircuit;
     label = "Quiz";
+    ariaLabel = `Start AI Quiz for ${topic}`;
     colorClass = "text-purple-600 bg-purple-50 hover:bg-purple-100 border-purple-200";
   }
 
@@ -85,13 +92,13 @@ const ResourceButton = ({ type, topic, compact = false }) => {
   if (compact) {
     if (type === 'quiz') {
       return (
-        <button onClick={handleClick} className={`p-2 rounded-xl transition-all hover:scale-110 ${colorClass.replace('bg-', 'hover:bg-').split(' ')[0]} hover:bg-opacity-10`} title={`Take AI Quiz on ${topic}`}>
+        <button onClick={handleClick} aria-label={ariaLabel} className={`p-2 rounded-xl transition-all hover:scale-110 ${colorClass.replace('bg-', 'hover:bg-').split(' ')[0]} hover:bg-opacity-10`} title={`Take AI Quiz on ${topic}`}>
           <IconComp className="w-4 h-4" />
         </button>
       )
     }
     return (
-        <a href={url} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className={`p-2 rounded-xl transition-all hover:scale-110 ${colorClass.replace('bg-', 'hover:bg-').split(' ')[0]} hover:bg-opacity-10`} title={`Search ${topic}`}>
+        <a href={url} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} aria-label={ariaLabel} className={`p-2 rounded-xl transition-all hover:scale-110 ${colorClass.replace('bg-', 'hover:bg-').split(' ')[0]} hover:bg-opacity-10`} title={`Search ${topic}`}>
           <IconComp className="w-4 h-4" />
         </a>
     );
@@ -99,7 +106,7 @@ const ResourceButton = ({ type, topic, compact = false }) => {
 
   if (type === "quiz") {
     return (
-      <button onClick={handleClick} className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-bold transition-all hover:-translate-y-0.5 hover:shadow-sm ${colorClass}`}>
+      <button onClick={handleClick} aria-label={ariaLabel} className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-bold transition-all hover:-translate-y-0.5 hover:shadow-sm ${colorClass}`}>
         <IconComp className="w-4 h-4" />
         <span className="hidden sm:inline">{label}</span>
       </button>
@@ -107,7 +114,7 @@ const ResourceButton = ({ type, topic, compact = false }) => {
   }
 
   return (
-    <a href={url} target="_blank" rel="noopener noreferrer" className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-bold transition-all hover:-translate-y-0.5 hover:shadow-sm ${colorClass}`}>
+    <a href={url} target="_blank" rel="noopener noreferrer" aria-label={ariaLabel} className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-bold transition-all hover:-translate-y-0.5 hover:shadow-sm ${colorClass}`}>
       <IconComp className="w-4 h-4" />
       <span className="hidden sm:inline">{label}</span>
     </a>
@@ -119,6 +126,7 @@ const SubjectCard = ({ subjectKey, subject, isActive, onClick }) => {
   return (
     <button 
       onClick={() => onClick(subjectKey)} 
+      aria-label={`Select subject: ${subject.title}`}
       className={`w-full flex items-center gap-3 p-3 rounded-2xl transition-all duration-300 mb-2 
         ${isActive 
           ? 'bg-white shadow-lg shadow-indigo-100 ring-1 ring-indigo-50 text-gray-900 scale-[1.02]' 
@@ -134,10 +142,12 @@ const SubjectCard = ({ subjectKey, subject, isActive, onClick }) => {
 };
 
 const TopicItem = ({ topic }) => (
-  <div className="flex flex-col sm:flex-row sm:items-center justify-between p-5 bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-lg hover:border-indigo-100 transition-all duration-300 gap-4 group">
+  // SEO: Using <article> for individual items
+  <article className="flex flex-col sm:flex-row sm:items-center justify-between p-5 bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-lg hover:border-indigo-100 transition-all duration-300 gap-4 group">
     <div className="flex items-start gap-4">
        <div className="mt-2.5 min-w-[8px] h-[8px] rounded-full bg-indigo-200 group-hover:bg-indigo-500 transition-colors" />
-       <span className="text-gray-700 font-semibold leading-relaxed text-[15px] group-hover:text-gray-900">{topic}</span>
+       {/* SEO: Semantic Heading */}
+       <h4 className="text-gray-700 font-semibold leading-relaxed text-[15px] group-hover:text-gray-900">{topic}</h4>
     </div>
     <div className="flex items-center gap-2 pl-6 sm:pl-0 opacity-80 group-hover:opacity-100 transition-opacity">
       <ResourceButton type="youtube" topic={topic} />
@@ -145,15 +155,17 @@ const TopicItem = ({ topic }) => (
       <ResourceButton type="google" topic={topic} />
       <ResourceButton type="quiz" topic={topic} />
     </div>
-  </div>
+  </article>
 );
 
 const SectionAccordion = ({ section, defaultOpen }) => {
   const [isOpen, setIsOpen] = useState(defaultOpen);
   return (
-    <div className="mb-4 bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm transition-all hover:shadow-md">
+    // SEO: Using <section> for grouped content
+    <section className="mb-4 bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm transition-all hover:shadow-md">
       <div onClick={() => setIsOpen(!isOpen)} className="w-full flex items-center justify-between p-5 cursor-pointer bg-gradient-to-r from-transparent to-transparent hover:to-gray-50 transition-all">
         <div className="flex items-center gap-4">
+            {/* SEO: Heading hierarchy */}
             <h3 className="text-lg font-bold text-gray-800 tracking-tight">{section.title}</h3>
             <div className="flex items-center gap-1 ml-2 border-l-2 border-gray-100 pl-4">
                 <ResourceButton type="quiz" topic={section.title} compact={true} />
@@ -170,7 +182,7 @@ const SectionAccordion = ({ section, defaultOpen }) => {
           ))}
         </div>
       )}
-    </div>
+    </section>
   );
 };
 
@@ -181,6 +193,10 @@ const App = () => {
   const [isSidebarOpen, setSidebarOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const { user } = useAuth();
+  
+  // SEO Logic: Prepare data for metadata
+  const activeSubjectData = syllabusData[activeSubject] || syllabusData['physics'];
+  const ActiveIcon = activeSubjectData.icon || BookOpen;
 
   const toggleSidebar = () => setSidebarOpen(!isSidebarOpen);
 
@@ -203,19 +219,25 @@ const App = () => {
     return syllabusData[activeSubject]?.sections || [];
   }, [activeSubject, searchQuery]);
 
-  const activeSubjectData = syllabusData[activeSubject] || syllabusData['physics'];
-  const ActiveIcon = activeSubjectData.icon || BookOpen;
-
   return (
     <div className="min-h-screen bg-[#F8FAFC] font-sans text-gray-900 selection:bg-indigo-100 selection:text-indigo-900">
-      {/* Modular Header */}
+      
+      {/* --- DYNAMIC SEO INJECTION --- */}
+      <SEO 
+        title={searchQuery ? `Search Results: ${searchQuery}` : `${activeSubjectData.title} Syllabus & Notes`}
+        description={`Free TGT Non-Medical resources for ${activeSubjectData.title}. Practice ${displayedContent[0]?.topics[0] || 'topics'} and more for HPRCA exams.`}
+        keywords={`TGT Non Medical, ${activeSubjectData.title}, HPRCA, Formulas, Quiz`}
+      />
+
       <Header toggleSidebar={toggleSidebar} />
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex flex-col lg:flex-row gap-8">
           
-          {/* Sidebar Navigation */}
-          <nav className={`fixed inset-y-0 left-0 transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:relative lg:translate-x-0 lg:w-72 lg:block z-30 bg-[#F8FAFC] transition-transform duration-300 ease-in-out ${isSidebarOpen ? 'bg-white shadow-2xl p-6 w-80' : ''}`}>
+          <nav 
+            aria-label="Sidebar"
+            className={`fixed inset-y-0 left-0 transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:relative lg:translate-x-0 lg:w-72 lg:block z-30 bg-[#F8FAFC] transition-transform duration-300 ease-in-out ${isSidebarOpen ? 'bg-white shadow-2xl p-6 w-80' : ''}`}
+          >
             <div className="flex justify-between items-center lg:hidden mb-8">
                <span className="font-bold text-xl text-gray-900">Subjects</span>
                <button onClick={toggleSidebar} className="p-2 bg-gray-100 rounded-full"><X className="w-6 h-6 text-gray-600" /></button>
@@ -241,21 +263,23 @@ const App = () => {
           
           {isSidebarOpen && <div className="fixed inset-0 bg-gray-900/20 backdrop-blur-sm z-20 lg:hidden" onClick={() => setSidebarOpen(false)} />}
           
-          {/* Main Content Area */}
           <main className="flex-1 min-w-0">
             <div className="relative mb-10 group">
                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none"><Search className="h-5 w-5 text-gray-400 group-focus-within:text-indigo-500 transition-colors" /></div>
                <input
                  type="text"
+                 aria-label="Search syllabus topics"
                  className="block w-full pl-12 pr-4 py-4 border-none rounded-2xl bg-white shadow-sm ring-1 ring-gray-200 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:shadow-lg transition-all"
                  placeholder="Search topics (e.g., 'Thermodynamics', 'Matrices')..."
                  value={searchQuery}
                  onChange={(e) => setSearchQuery(e.target.value)}
                />
             </div>
-            <div className="mb-8 flex items-center justify-between">
+            
+            <header className="mb-8 flex items-center justify-between">
               <div>
-                <h2 className="text-3xl font-extrabold text-gray-900 tracking-tight">{searchQuery ? `Results for "${searchQuery}"` : activeSubjectData.title}</h2>
+                {/* SEO: H1 for main page title */}
+                <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">{searchQuery ? `Results for "${searchQuery}"` : activeSubjectData.title}</h1>
                 <p className="text-base text-gray-500 mt-2 font-medium">{searchQuery ? 'Showing topics across all subjects' : 'Select a section below to explore resources'}</p>
               </div>
               {!searchQuery && (
@@ -263,7 +287,8 @@ const App = () => {
                       <div className={activeSubjectData.color}><ActiveIcon className="w-10 h-10" /></div>
                   </div>
               )}
-            </div>
+            </header>
+
             <div className="space-y-6 pb-20">
               {displayedContent.length > 0 ? (
                 displayedContent.map((section, idx) => (
@@ -277,7 +302,8 @@ const App = () => {
                 </div>
               )}
             </div>
-            <div className="mt-auto py-8 border-t border-gray-200">
+            
+            <footer className="mt-auto py-8 border-t border-gray-200">
               <div className="flex flex-col items-center justify-center gap-3">
                 <p className="text-sm font-medium text-gray-500">
                   Contribution made by <span className="font-bold text-gray-900">Chudamani Lawrence</span>
@@ -287,7 +313,7 @@ const App = () => {
                   <span className="text-xs font-bold text-gray-600 group-hover:text-indigo-600 transition-colors">github.com/cmlowerence</span>
                 </a>
               </div>
-            </div>
+            </footer>
           </main>
         </div>
       </div>
@@ -298,43 +324,23 @@ const App = () => {
 // --- APP WRAPPER (Router & Context) ---
 
 const AppWrapper = () => {
-  // Inject attractive Favicon on mount
-  useEffect(() => {
-    const faviconSvg = encodeURIComponent(`
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-        <defs>
-          <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" style="stop-color:#4f46e5;stop-opacity:1" />
-            <stop offset="100%" style="stop-color:#7c3aed;stop-opacity:1" />
-          </linearGradient>
-        </defs>
-        <rect width="100" height="100" rx="30" fill="url(#grad)"/>
-        <path d="M30 50 L50 70 L70 30" stroke="white" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-      </svg>
-    `);
-    
-    const link = document.querySelector("link[rel*='icon']") || document.createElement('link');
-    link.type = 'image/svg+xml';
-    link.rel = 'shortcut icon';
-    link.href = `data:image/svg+xml,${faviconSvg}`;
-    document.getElementsByTagName('head')[0].appendChild(link);
-    document.title = 'TGT Explorer | Ace Your Exams';
-  }, []);
-
   return (
-    <AuthProvider>
-      <GlobalStyles />
-      <Router>
-        <Routes>
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/" element={<App />} />
-          <Route path="/quiz/:topic" element={<QuizPage />} />
-          <Route path="/leaderboard" element={<LeaderboardPage />} />
-          <Route path="/history" element={<HistoryPage />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </Router>
-    </AuthProvider>
+    // SEO: Wrapping app in HelmetProvider
+    <HelmetProvider>
+      <AuthProvider>
+        <GlobalStyles />
+        <Router>
+          <Routes>
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/" element={<App />} />
+            <Route path="/quiz/:topic" element={<QuizPage />} />
+            <Route path="/leaderboard" element={<LeaderboardPage />} />
+            <Route path="/history" element={<HistoryPage />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </Router>
+      </AuthProvider>
+    </HelmetProvider>
   );
 };
 
