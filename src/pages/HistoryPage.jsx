@@ -9,7 +9,9 @@ const HistoryPage = () => {
   const navigate = useNavigate();
   
   const stats = useMemo(() => user ? getStudentStats() : null, [user, getStudentStats]);
-  const [activeTab, setActiveTab] = useState(stats ? Object.keys(stats.subjectProgress)[0] : '');
+  
+  // Default to first subject or empty string
+  const [activeTab, setActiveTab] = useState(stats && stats.subjectProgress ? Object.keys(stats.subjectProgress)[0] : '');
 
   if (!user) {
     return (
@@ -26,45 +28,65 @@ const HistoryPage = () => {
   if (!stats) return null;
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] pb-20 font-sans">
-      <div className="bg-white border-b border-gray-100 sticky top-0 z-20">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4 flex items-center gap-4">
-          <button onClick={() => navigate('/leaderboard')} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
-            <ArrowLeft className="w-5 h-5 text-gray-600" />
-          </button>
-          <div>
-            <h1 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-              <History className="w-5 h-5 text-indigo-500" /> Attempt History
-            </h1>
-            <p className="text-xs text-gray-400 font-medium">Review your last 10 quizzes per subject</p>
-          </div>
+    <div className="min-h-screen bg-[#F8FAFC] font-sans">
+      
+      {/* --- FIXED HEADER CONTAINER START --- */}
+      {/* Changed to 'fixed' to ensure it stays on top. Added z-40 to layer above content. */}
+      <div className="fixed top-0 left-0 right-0 z-40 bg-[#F8FAFC]/95 backdrop-blur-md border-b border-gray-200 shadow-sm transition-all">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 pt-4">
+            
+            {/* Top Row: Navigation & Title */}
+            <div className="flex items-center gap-4 mb-4">
+                <button onClick={() => navigate('/leaderboard')} className="p-2 hover:bg-white rounded-full transition-colors border border-transparent hover:border-gray-200">
+                    <ArrowLeft className="w-5 h-5 text-gray-600" />
+                </button>
+                <div>
+                    <h1 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                    <History className="w-5 h-5 text-indigo-500" /> Attempt History
+                    </h1>
+                    <p className="text-xs text-gray-400 font-medium hidden sm:block">Review your last 10 quizzes per subject</p>
+                </div>
+            </div>
+
+            {/* Bottom Row: Subject Tabs */}
+            <div className="flex overflow-x-auto pb-0 gap-2 no-scrollbar -mb-px">
+            {Object.entries(stats.subjectProgress).map(([key, subject]) => {
+                const isActive = activeTab === key;
+                return (
+                    <button
+                    key={key}
+                    onClick={() => setActiveTab(key)}
+                    className={`flex items-center gap-2 px-4 py-3 border-b-2 font-bold whitespace-nowrap transition-all text-sm ${
+                        isActive 
+                        ? 'border-indigo-600 text-indigo-600 bg-indigo-50/50 rounded-t-lg' 
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-100/50 rounded-t-lg'
+                    }`}
+                    >
+                    <BookOpen className={`w-4 h-4 ${isActive ? 'text-indigo-600' : 'text-gray-400'}`} />
+                    {subject.title}
+                    </button>
+                );
+            })}
+            </div>
         </div>
       </div>
+      {/* --- FIXED HEADER CONTAINER END --- */}
 
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
-        <div className="flex overflow-x-auto pb-4 mb-4 gap-3 no-scrollbar">
-          {Object.entries(stats.subjectProgress).map(([key, subject]) => (
-            <button
-              key={key}
-              onClick={() => setActiveTab(key)}
-              className={`flex items-center gap-2 px-5 py-3 rounded-xl border font-bold whitespace-nowrap transition-all ${
-                activeTab === key ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-600 border-gray-200'
-              }`}
-            >
-              <BookOpen className={`w-4 h-4 ${activeTab === key ? 'text-indigo-300' : 'text-gray-400'}`} />
-              {subject.title}
-            </button>
-          ))}
-        </div>
-
+      {/* --- MAIN CONTENT START --- */}
+      {/* Added 'pt-[160px]' (padding-top) to push content down so it starts below the fixed header */}
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 pb-20 pt-[160px] sm:pt-[150px]">
         <div className="bg-white rounded-[2rem] border border-gray-100 shadow-sm min-h-[500px] p-2 sm:p-6">
           {activeTab && stats.subjectProgress[activeTab] ? (
-            <QuizHistoryViewer recentAttempts={stats.subjectProgress[activeTab].recentAttempts} subjectTitle={stats.subjectProgress[activeTab].title} />
+            <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+                <QuizHistoryViewer recentAttempts={stats.subjectProgress[activeTab].recentAttempts} subjectTitle={stats.subjectProgress[activeTab].title} />
+            </div>
           ) : (
             <div className="flex flex-col items-center justify-center h-64 text-gray-400"><p>Select a subject to view history.</p></div>
           )}
         </div>
       </div>
+      {/* --- MAIN CONTENT END --- */}
+
     </div>
   );
 };

@@ -1,14 +1,17 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, Trophy, Calendar, Target, Zap, 
-  BarChart3, CheckCircle2, CircleDashed, Lock, History, ChevronRight
+  BarChart3, CheckCircle2, CircleDashed, Lock, History, ChevronRight, Edit2
 } from 'lucide-react';
+import UserAvatar from '../components/ui/UserAvatar';
+import AvatarSelectionModal from '../components/profile/AvatarSelectionModal';
 
 const LeaderboardPage = () => {
-  const { user, getStudentStats } = useAuth();
+  const { user, getStudentStats, updateProfile } = useAuth();
   const navigate = useNavigate();
+  const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
   
   const stats = useMemo(() => getStudentStats(), [getStudentStats, user]);
   
@@ -34,9 +37,21 @@ const LeaderboardPage = () => {
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] p-4 sm:p-8 font-sans">
+      
+      {/* Avatar Selection Modal */}
+      <AvatarSelectionModal 
+        isOpen={isAvatarModalOpen} 
+        onClose={() => setIsAvatarModalOpen(false)}
+        currentAvatarId={user.avatarId}
+        onSelect={(id) => {
+          updateProfile({ avatarId: id });
+          setIsAvatarModalOpen(false);
+        }}
+      />
+
       <div className="max-w-6xl mx-auto space-y-10">
         
-        {/* Header */}
+        {/* Header Section */}
         <div className="flex items-center justify-between">
           <button 
             onClick={() => navigate('/')} 
@@ -44,13 +59,23 @@ const LeaderboardPage = () => {
           >
             <ArrowLeft className="w-4 h-4" /> Back to Syllabus
           </button>
-          <div className="text-right">
-             <p className="text-[10px] text-gray-400 uppercase tracking-widest font-black">Student ID</p>
-             <p className="text-lg font-bold text-gray-900">{user.username}</p>
+          
+          <div className="flex items-center gap-3">
+             <div className="text-right hidden sm:block">
+                <p className="text-[10px] text-gray-400 uppercase tracking-widest font-black">Student ID</p>
+                <p className="text-lg font-bold text-gray-900">{user.username}</p>
+             </div>
+             {/* Avatar Trigger with Edit Icon */}
+             <div className="relative group cursor-pointer" onClick={() => setIsAvatarModalOpen(true)}>
+                <UserAvatar avatarId={user.avatarId} size="lg" className="shadow-lg shadow-indigo-100 ring-4 ring-white" />
+                <div className="absolute bottom-0 right-0 bg-gray-900 text-white p-1.5 rounded-full shadow-sm hover:scale-110 transition-transform">
+                   <Edit2 className="w-3 h-3" />
+                </div>
+             </div>
           </div>
         </div>
 
-        {/* Hero Card */}
+        {/* Hero Card (Efficiency & Topics) */}
         <div className="bg-gradient-to-br from-indigo-900 to-violet-900 rounded-[2.5rem] p-8 sm:p-12 text-white shadow-2xl shadow-indigo-900/20 relative overflow-hidden">
           {/* Abstract blobs */}
           <div className="absolute top-0 right-0 w-96 h-96 bg-white opacity-[0.03] rounded-full blur-3xl -mr-20 -mt-20"></div>
@@ -66,17 +91,17 @@ const LeaderboardPage = () => {
               </p>
             </div>
             
-            <div className="flex items-center gap-8 bg-white/5 backdrop-blur-lg p-8 rounded-3xl border border-white/10 shadow-xl">
+            <div className="flex items-center gap-6 sm:gap-10 bg-white/5 backdrop-blur-lg p-6 sm:p-8 rounded-3xl border border-white/10 shadow-xl">
               <div className="text-center">
                  <p className="text-indigo-200 text-[10px] font-black uppercase tracking-widest mb-2">Efficiency</p>
-                 <div className="text-6xl font-black text-white flex items-start justify-center tracking-tighter">
-                    {stats.efficiency}<span className="text-3xl mt-1 text-indigo-400">%</span>
+                 <div className="text-4xl sm:text-5xl md:text-6xl font-black text-white flex items-start justify-center tracking-tighter transition-all">
+                    {stats.efficiency}<span className="text-2xl sm:text-3xl mt-1 text-indigo-400">%</span>
                  </div>
               </div>
-              <div className="h-16 w-px bg-white/10"></div>
+              <div className="h-12 sm:h-16 w-px bg-white/10"></div>
               <div className="text-center">
                  <p className="text-indigo-200 text-[10px] font-black uppercase tracking-widest mb-2">Topics Mastered</p>
-                 <div className="text-6xl font-black text-white tracking-tighter">
+                 <div className="text-4xl sm:text-5xl md:text-6xl font-black text-white tracking-tighter transition-all">
                     {stats.uniqueTopicsCount}
                  </div>
               </div>
@@ -84,7 +109,7 @@ const LeaderboardPage = () => {
           </div>
         </div>
 
-        {/* Two Column Layout */}
+        {/* Grid Layout (Subject Progress + Recent History) */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
           
           {/* Left Column: Subject Progress (Takes up 2 cols) */}

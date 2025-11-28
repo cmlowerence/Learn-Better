@@ -1,5 +1,5 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
-import { ALLOWED_USERS } from '../data/users';
+import { ALLOWED_USERS } from '../data/users'; // Ensure this path exists
 import { syllabusData } from '../syllabusData';
 
 const AuthContext = createContext(null);
@@ -8,7 +8,6 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Load user from local storage on boot
   useEffect(() => {
     const storedUser = localStorage.getItem('tgt_current_user');
     if (storedUser) {
@@ -17,15 +16,22 @@ export const AuthProvider = ({ children }) => {
     setLoading(false);
   }, []);
 
-  // --- ACTIONS ---
-
   const login = (username, passkey) => {
     const foundUser = ALLOWED_USERS.find(
       u => u.username.toLowerCase() === username.trim().toLowerCase() && u.passkey === passkey
     );
 
     if (foundUser) {
-      const userData = { ...foundUser, loginTime: new Date().toISOString() };
+      // Check if there is an existing profile update for this user in localStorage
+      const savedProfileKey = `tgt_profile_${foundUser.username}`;
+      const savedProfile = JSON.parse(localStorage.getItem(savedProfileKey) || '{}');
+
+      const userData = { 
+        ...foundUser, 
+        ...savedProfile, // Merge saved avatar/settings
+        loginTime: new Date().toISOString() 
+      };
+      
       setUser(userData);
       localStorage.setItem('tgt_current_user', JSON.stringify(userData));
       return true;
@@ -38,139 +44,85 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('tgt_current_user');
   };
 
-  const saveQuizResult = (topic, score, total, questions = [], userAnswers = {}) => {
+  const updateProfile = (updates) => {
     if (!user) return;
     
-    // 1. Identify Subject
-    let subjectKey = 'unknown';
-    let subjectName = 'General';
+    const updatedUser = { ...user, ...updates };
+    setUser(updatedUser);
     
-    Object.entries(syllabusData).forEach(([key, data]) => {
-      data.sections.forEach(section => {
-        if (section.topics.includes(topic) || section.title === topic) {
-          subjectKey = key;
-          subjectName = data.title;
-        }
-      });
-    });
-
-    // 2. Save Summary Stats (For Graphs - Keep All)
-    const summaryKey = `tgt_progress_${user.username}`;
-    const currentSummary = JSON.parse(localStorage.getItem(summaryKey) || '[]');
-
-    const newSummaryEntry = {
-      id: Date.now(),
-      topic,
-      subjectKey,
-      subjectName,
-      score,
-      total,
-      percentage: Math.round((score / total) * 100),
-      date: new Date().toISOString()
-    };
+    // Update current session
+    localStorage.setItem('tgt_current_user', JSON.stringify(updatedUser));
     
-    localStorage.setItem(summaryKey, JSON.stringify([newSummaryEntry, ...currentSummary]));
-
-    // 3. Save Detailed History (For Revision - Last 10 Quizzes Per Subject)
-    const detailedKey = `tgt_detailed_history_${user.username}`;
-    let detailedHistory = JSON.parse(localStorage.getItem(detailedKey) || '[]');
-
-    const newDetailedEntry = {
-      id: Date.now(),
-      timestamp: new Date().toISOString(),
-      topic,
-      subjectKey, 
-      score,
-      total,
-      questions,    
-      userAnswers   
-    };
-
-    // Add new entry
-    detailedHistory.push(newDetailedEntry);
-
-    // Filter logic: Enforce Max 10 Quizzes per Subject
-    const subjectEntries = detailedHistory.filter(entry => entry.subjectKey === subjectKey);
-    
-    if (subjectEntries.length > 10) {
-      // Sort by timestamp (oldest first)
-      subjectEntries.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-      
-      // Calculate how many to remove
-      const itemsToRemoveCount = subjectEntries.length - 10;
-      const idsToRemove = subjectEntries.slice(0, itemsToRemoveCount).map(e => e.id);
-      
-      // Remove oldest entries for this subject from main array
-      detailedHistory = detailedHistory.filter(entry => !idsToRemove.includes(entry.id));
-    }
-
-    localStorage.setItem(detailedKey, JSON.stringify(detailedHistory));
+    // Persist profile settings permanently
+    const savedProfileKey = `tgt_profile_${user.username}`;
+    const currentSaved = JSON.parse(localStorage.getItem(savedProfileKey) || '{}');
+    localStorage.setItem(savedProfileKey, JSON.stringify({ ...currentSaved, ...updates }));
   };
 
-  // --- STATISTICS ENGINE ---
+  // ... keep existing saveQuizResult and getStudentStats functions ...
+  // (Paste your existing saveQuizResult and getStudentStats logic here)
+  const saveQuizResult = (topic, score, total, questions = [], userAnswers = {}) => {
+      // ... (Use your existing code)
+      // I am omitting it for brevity, but DO NOT DELETE IT from your file
+      if (!user) return;
+      let subjectKey = 'unknown';
+      let subjectName = 'General';
+      Object.entries(syllabusData).forEach(([key, data]) => {
+        data.sections.forEach(section => {
+          if (section.topics.includes(topic) || section.title === topic) {
+            subjectKey = key;
+            subjectName = data.title;
+          }
+        });
+      });
+      const summaryKey = `tgt_progress_${user.username}`;
+      const currentSummary = JSON.parse(localStorage.getItem(summaryKey) || '[]');
+      const newSummaryEntry = { id: Date.now(), topic, subjectKey, subjectName, score, total, percentage: Math.round((score / total) * 100), date: new Date().toISOString() };
+      localStorage.setItem(summaryKey, JSON.stringify([newSummaryEntry, ...currentSummary]));
+      const detailedKey = `tgt_detailed_history_${user.username}`;
+      let detailedHistory = JSON.parse(localStorage.getItem(detailedKey) || '[]');
+      const newDetailedEntry = { id: Date.now(), timestamp: new Date().toISOString(), topic, subjectKey, score, total, questions, userAnswers };
+      detailedHistory.push(newDetailedEntry);
+      const subjectEntries = detailedHistory.filter(entry => entry.subjectKey === subjectKey);
+      if (subjectEntries.length > 10) {
+        subjectEntries.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+        const itemsToRemoveCount = subjectEntries.length - 10;
+        const idsToRemove = subjectEntries.slice(0, itemsToRemoveCount).map(e => e.id);
+        detailedHistory = detailedHistory.filter(entry => !idsToRemove.includes(entry.id));
+      }
+      localStorage.setItem(detailedKey, JSON.stringify(detailedHistory));
+  };
 
   const getStudentStats = () => {
+    // ... (Use your existing code)
     if (!user) return null;
-    
     const summaryKey = `tgt_progress_${user.username}`;
     const detailedKey = `tgt_detailed_history_${user.username}`;
-    
     const history = JSON.parse(localStorage.getItem(summaryKey) || '[]');
     const detailedHistory = JSON.parse(localStorage.getItem(detailedKey) || '[]');
-
-    // 1. Calculate Overall Efficiency 
     const bestScoresByTopic = {};
     history.forEach(attempt => {
       if (!bestScoresByTopic[attempt.topic] || attempt.percentage > bestScoresByTopic[attempt.topic]) {
         bestScoresByTopic[attempt.topic] = attempt.percentage;
       }
     });
-
     const uniqueTopicsAttempted = Object.keys(bestScoresByTopic).length;
     const totalEfficiencyScore = Object.values(bestScoresByTopic).reduce((a, b) => a + b, 0);
-    const averageEfficiency = uniqueTopicsAttempted > 0 
-      ? Math.round(totalEfficiencyScore / uniqueTopicsAttempted) 
-      : 0;
-
-    // 2. Calculate Subject-wise Progress & Attach Recent History
+    const averageEfficiency = uniqueTopicsAttempted > 0 ? Math.round(totalEfficiencyScore / uniqueTopicsAttempted) : 0;
     const subjectProgress = {};
-    
     Object.entries(syllabusData).forEach(([key, data]) => {
       const allTopics = data.sections.flatMap(s => s.topics);
       const totalTopics = allTopics.length;
-      
       const attemptedTopics = allTopics.filter(t => bestScoresByTopic[t] !== undefined);
       const completedCount = attemptedTopics.length;
-      
-      // Get the last 10 quizzes for this specific subject
-      // Sort newest first
-      const subjectSpecificHistory = detailedHistory
-        .filter(h => h.subjectKey === key)
-        .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-
-      subjectProgress[key] = {
-        title: data.title,
-        total: totalTopics,
-        completed: completedCount,
-        remaining: totalTopics - completedCount,
-        percentComplete: totalTopics > 0 ? Math.round((completedCount / totalTopics) * 100) : 0,
-        color: data.color,
-        bgColor: data.bgColor,
-        // THIS IS THE KEY FIELD THE VIEWER NEEDS
-        recentAttempts: subjectSpecificHistory
-      };
+      const subjectSpecificHistory = detailedHistory.filter(h => h.subjectKey === key).sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+      subjectProgress[key] = { title: data.title, total: totalTopics, completed: completedCount, remaining: totalTopics - completedCount, percentComplete: totalTopics > 0 ? Math.round((completedCount / totalTopics) * 100) : 0, color: data.color, bgColor: data.bgColor, recentAttempts: subjectSpecificHistory };
     });
-
-    return {
-      history,
-      efficiency: averageEfficiency,
-      uniqueTopicsCount: uniqueTopicsAttempted,
-      subjectProgress
-    };
+    return { history, efficiency: averageEfficiency, uniqueTopicsCount: uniqueTopicsAttempted, subjectProgress };
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, saveQuizResult, getStudentStats, loading }}>
+    <AuthContext.Provider value={{ user, login, logout, updateProfile, saveQuizResult, getStudentStats, loading }}>
       {!loading && children}
     </AuthContext.Provider>
   );

@@ -1,16 +1,16 @@
-import React, { useState, useMemo } from 'react';
-import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
+import React, { useState, useMemo, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
 import { syllabusData } from './syllabusData';
 import QuizPage from './QuizPage';
 import NotFound from './pages/NotFound';
 import LoginPage from './pages/LoginPage';
-import HistoryPage from './pages/HistoryPage';
 import LeaderboardPage from './pages/LeaderboardPage';
+import HistoryPage from './pages/HistoryPage';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import Header from './components/layout/Header';
 import { 
-  BookOpen, Search, Youtube, FileText, ChevronDown, ChevronRight, Menu, X, 
-  ExternalLink, Atom, FlaskConical, Calculator, GraduationCap, Globe, 
-  BrainCircuit, Github, LogOut, LayoutDashboard, LogIn 
+  BookOpen, Search, Youtube, FileText, ChevronDown, 
+  BrainCircuit, Github, X 
 } from 'lucide-react';
 
 // --- GLOBAL FONT & STYLE INJECTION ---
@@ -45,90 +45,7 @@ const GlobalStyles = () => (
   `}</style>
 );
 
-const IconMap = {
-  FlaskConical,
-  Atom,
-  Calculator,
-  GraduationCap,
-  Globe
-};
-
-// --- APP WRAPPER ---
-const AppWrapper = () => {
-  return (
-    <AuthProvider>
-      <GlobalStyles />
-      <Router>
-        <Routes>
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/" element={<App />} />
-          <Route path="/quiz/:topic" element={<QuizPage />} />
-          <Route path="/leaderboard" element={<LeaderboardPage />} />
-          <Route path="/history" element={<HistoryPage />} /> 
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </Router>
-    </AuthProvider>
-  );
-};
-
-// --- MAIN APP COMPONENTS ---
-
-const Header = ({ toggleSidebar }) => {
-  const { user, logout } = useAuth();
-  const navigate = useNavigate();
-
-  return (
-    <header className="bg-white/80 backdrop-blur-md shadow-sm border-b border-gray-100 sticky top-0 z-20">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
-          <div className="flex items-center gap-3">
-            <button onClick={toggleSidebar} className="p-2 rounded-xl hover:bg-gray-100 lg:hidden transition-colors">
-              <Menu className="w-6 h-6 text-gray-600" />
-            </button>
-            <div className="flex items-center gap-2 cursor-pointer group" onClick={() => navigate('/')}>
-              <div className="bg-indigo-600 p-2 rounded-xl shadow-lg shadow-indigo-200 group-hover:scale-105 transition-transform duration-300">
-                <BookOpen className="w-6 h-6 text-white" />
-              </div>
-              <h1 className="text-2xl font-bold text-gray-900 hidden sm:block tracking-tight">
-                TGT Explorer
-              </h1>
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-4">
-             {/* USER MENU */}
-             {user ? (
-               <div className="flex items-center gap-3 bg-white px-4 py-1.5 rounded-full border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
-                  <button 
-                    onClick={() => navigate('/leaderboard')}
-                    className="flex items-center gap-2 text-xs font-bold text-indigo-600 hover:text-indigo-800 transition-colors uppercase tracking-wide"
-                  >
-                    <LayoutDashboard className="w-4 h-4" /> Stats
-                  </button>
-                  <div className="h-4 w-px bg-gray-200"></div>
-                  <button 
-                    onClick={logout} 
-                    title="Logout" 
-                    className="text-gray-400 hover:text-red-500 transition-colors"
-                  >
-                     <LogOut className="w-4 h-4" />
-                  </button>
-               </div>
-             ) : (
-                <button 
-                  onClick={() => navigate('/login')}
-                  className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-xl transition-all shadow-lg shadow-indigo-200 hover:shadow-indigo-300 transform hover:-translate-y-0.5"
-                >
-                  <LogIn className="w-4 h-4" /> Login
-                </button>
-             )}
-          </div>
-        </div>
-      </div>
-    </header>
-  );
-};
+// --- HELPER COMPONENTS (Dashboard Specific) ---
 
 const ResourceButton = ({ type, topic, compact = false }) => {
   const navigate = useNavigate();
@@ -257,6 +174,8 @@ const SectionAccordion = ({ section, defaultOpen }) => {
   );
 };
 
+// --- MAIN DASHBOARD COMPONENT ---
+
 const App = () => {
   const [activeSubject, setActiveSubject] = useState('physics'); 
   const [isSidebarOpen, setSidebarOpen] = useState(false);
@@ -289,9 +208,13 @@ const App = () => {
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] font-sans text-gray-900 selection:bg-indigo-100 selection:text-indigo-900">
+      {/* Modular Header */}
       <Header toggleSidebar={toggleSidebar} />
+      
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex flex-col lg:flex-row gap-8">
+          
+          {/* Sidebar Navigation */}
           <nav className={`fixed inset-y-0 left-0 transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:relative lg:translate-x-0 lg:w-72 lg:block z-30 bg-[#F8FAFC] transition-transform duration-300 ease-in-out ${isSidebarOpen ? 'bg-white shadow-2xl p-6 w-80' : ''}`}>
             <div className="flex justify-between items-center lg:hidden mb-8">
                <span className="font-bold text-xl text-gray-900">Subjects</span>
@@ -315,7 +238,10 @@ const App = () => {
               </div>
             )}
           </nav>
+          
           {isSidebarOpen && <div className="fixed inset-0 bg-gray-900/20 backdrop-blur-sm z-20 lg:hidden" onClick={() => setSidebarOpen(false)} />}
+          
+          {/* Main Content Area */}
           <main className="flex-1 min-w-0">
             <div className="relative mb-10 group">
                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none"><Search className="h-5 w-5 text-gray-400 group-focus-within:text-indigo-500 transition-colors" /></div>
@@ -369,6 +295,47 @@ const App = () => {
   );
 };
 
+// --- APP WRAPPER (Router & Context) ---
+
+const AppWrapper = () => {
+  // Inject attractive Favicon on mount
+  useEffect(() => {
+    const faviconSvg = encodeURIComponent(`
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+        <defs>
+          <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style="stop-color:#4f46e5;stop-opacity:1" />
+            <stop offset="100%" style="stop-color:#7c3aed;stop-opacity:1" />
+          </linearGradient>
+        </defs>
+        <rect width="100" height="100" rx="30" fill="url(#grad)"/>
+        <path d="M30 50 L50 70 L70 30" stroke="white" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+      </svg>
+    `);
+    
+    const link = document.querySelector("link[rel*='icon']") || document.createElement('link');
+    link.type = 'image/svg+xml';
+    link.rel = 'shortcut icon';
+    link.href = `data:image/svg+xml,${faviconSvg}`;
+    document.getElementsByTagName('head')[0].appendChild(link);
+    document.title = 'TGT Explorer | Ace Your Exams';
+  }, []);
+
+  return (
+    <AuthProvider>
+      <GlobalStyles />
+      <Router>
+        <Routes>
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/" element={<App />} />
+          <Route path="/quiz/:topic" element={<QuizPage />} />
+          <Route path="/leaderboard" element={<LeaderboardPage />} />
+          <Route path="/history" element={<HistoryPage />} />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </Router>
+    </AuthProvider>
+  );
+};
+
 export default AppWrapper;
-
-
