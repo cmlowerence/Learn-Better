@@ -17,5 +17,10 @@ export const ALLOWED_USERS = [
     username: "chudamani", 
     passkey: "physics_wizard", 
     role: "student" 
+  },
+  {
+    username: "rakesh",
+    passkey: " raku@123",
+    role: "student"
   }
 ];
