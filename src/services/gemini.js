@@ -1,49 +1,52 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY || "");
+// Use process.env for Next.js. 
+// Ensure this runs server-side (Server Action) to keep the key safe.
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 
-export const generateQuizQuestions = async (topic, count = 5, difficulty = "medium", type = "concept") => {
-  // Input validation
-  count = Math.min(Math.max(1, Number(count) || 5), 50);
-  difficulty = String(difficulty).slice(0, 20);
-  type = String(type).slice(0, 50);
-  if (!topic || typeof topic !== "string") throw new Error("Invalid topic");
+export const generateQuizQuestions = async (topic, count = 5, difficulty = "medium") => {
+  // 1. Input Sanitization
+  const cleanCount = Math.min(Math.max(1, Number(count) || 5), 10); // Cap at 10 for speed
+  const cleanDiff = String(difficulty).slice(0, 20);
+  
+  if (!topic) throw new Error("Invalid topic provided.");
 
   try {
-    // 1. Check Model Name (See point #2 below)
+    // 2. Model Selection
+    // 'gemini-2.0-flash-exp' is great but experimental. 
+    // Fallback to 'gemini-1.5-flash' if you hit stability issues.
     const model = genAI.getGenerativeModel({
-      model: "gemini-2.0-flash-exp", // Updated to the correct experimental name
-      generationConfig: { responseMimeType: "application/json" }
+      model: "gemini-2.0-flash-exp", 
+      generationConfig: { 
+        responseMimeType: "application/json",
+        temperature: 0.7, // Add some creativity but keep it focused
+      }
     });
 
-    const prompt = `Generate ${count} ${difficulty} difficulty multiple choice questions about "${topic}". Return ONLY a JSON array.`;
+    // 3. Structured Prompting (Crucial for consistent JSON)
+    const prompt = `
+      You are a teacher. Generate ${cleanCount} multiple-choice questions about "${topic}".
+      Difficulty Level: ${cleanDiff}.
+      
+      Return a raw JSON array. Each object in the array MUST follow this exact structure:
+      {
+        "question": "The question text here?",
+        "options": ["Option A", "Option B", "Option C", "Option D"],
+        "answer": "The correct option text (must match one of the options exactly)",
+        "explanation": "Brief explanation of why the answer is correct"
+      }
+    `;
 
     const result = await model.generateContent(prompt);
     const response = await result.response;
-    const text = await response.text();
+    const text = response.text();
 
-    // Clean and Parse
-    let cleanText = text.trim().replace(/^\uFEFF/, ""); // Remove BOM
-    
-    // Attempt parsing
-    try {
-      return JSON.parse(cleanText);
-    } catch (e) {
-      // Fallback extraction
-      const first = cleanText.indexOf("[");
-      const last = cleanText.lastIndexOf("]");
-      if (first === -1 || last === -1) throw new Error("No JSON array found");
-      
-      const extracted = cleanText.slice(first, last + 1);
-      return JSON.parse(extracted);
-    }
+    // 4. Parse
+    const quizData = JSON.parse(text);
+    return quizData;
 
   } catch (error) {
-    console.error("Gemini API Error:", error);
-    // Better error message for debugging
-    throw new Error(
-      "Quiz generation failed: " + 
-      (error.message.includes("404") ? "Model not found (check model name)." : error.message)
-    );
+    console.error("Quiz Generation Error:", error);
+    throw new Error("Failed to generate quiz. Please try again.");
   }
 };
