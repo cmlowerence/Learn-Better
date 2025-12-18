@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { generateQuizQuestions } from './services/gemini';
+import { generateQuizQuestions, getAvailableModels } from './services/gemini';
 import { useAuth } from './context/AuthContext';
 import SEO from './components/SEO';
 
@@ -16,7 +16,7 @@ const QuizPage = () => {
   const { user, saveQuizResult } = useAuth(); 
 
   // --- MAIN STATES ---
-  const [step, setStep] = useState('config'); 
+  const [step, setStep] = useState('config'); // config | loading | quiz | result
   const [config, setConfig] = useState({ count: 5, difficulty: 'Medium', type: 'Conceptual' });
   const [questions, setQuestions] = useState([]);
   const [currentQIndex, setCurrentQIndex] = useState(0);
@@ -37,8 +37,11 @@ const QuizPage = () => {
     const updateVoices = () => {
       setAvailableVoices(window.speechSynthesis.getVoices());
     };
+    
+    // Chrome requires this event listener
     window.speechSynthesis.onvoiceschanged = updateVoices;
     updateVoices();
+    
     return () => window.speechSynthesis.cancel();
   }, []);
 
@@ -46,16 +49,15 @@ const QuizPage = () => {
     const cleanText = text.replace(/\$\$/g, '').replace(/\\/g, ''); 
     if (/[\u0900-\u097F]/.test(cleanText)) return 'hi-IN'; // Hindi
     if (/[\u0400-\u04FF]/.test(cleanText)) return 'ru-RU'; // Russian
-    if (/[áéíóúñüÁÉÍÓÚÑÜ]/.test(cleanText)) return 'es-ES'; // Spanish (Approx)
+    if (/[áéíóúñüÁÉÍÓÚÑÜ]/.test(cleanText)) return 'es-ES'; // Spanish
     return 'en-US'; // Default
   };
 
   const handleSpeak = (text, id) => {
     if (!('speechSynthesis' in window)) return;
     
-    // Clear previous audio
+    // Stop any current speech
     window.speechSynthesis.cancel();
-    // Do NOT clear error state globally here, only if starting new valid audio
     
     if (activeAudioId === id) {
       setActiveAudioId(null);
@@ -71,8 +73,7 @@ const QuizPage = () => {
     const voice = availableVoices.find(v => v.lang.startsWith(detectedLang)) || 
                   availableVoices.find(v => v.lang.includes(detectedLang.split('-')[0]));
 
-    // --- FIX: Strict Error Handling ---
-    // Only trigger error if we truly cannot find a voice for a non-English text
+    // Error: No voice found for foreign language
     if (!voice && detectedLang !== 'en-US') {
        if(availableVoices.length > 0) {
           setAudioErrorId(id);
@@ -90,14 +91,13 @@ const QuizPage = () => {
 
     utterance.onend = () => setActiveAudioId(null);
     
-    // --- FIX: Ignore Interrupted Error ---
     utterance.onerror = (event) => {
-        // If the error is simply that we cancelled it (interrupted), do NOT show red icon
+        // Ignore "interrupted" errors (when user clicks next/stop)
         if (event.error === 'interrupted' || event.error === 'canceled') {
             setActiveAudioId(null);
             return; 
         }
-        // Genuine error
+        // Real error
         setActiveAudioId(null);
         setAudioErrorId(id);
     };
@@ -111,14 +111,33 @@ const QuizPage = () => {
   const startQuiz = async () => {
     setStep('loading');
     setError('');
+    
     try {
       const data = await generateQuizQuestions(topic, config.count, config.difficulty, config.type);
-      if (!Array.isArray(data) || data.length === 0) throw new Error("Received empty data.");
+      
+      if (!Array.isArray(data) || data.length === 0) {
+        throw new Error("API returned empty data.");
+      }
+      
       setQuestions(data);
       setStep('quiz');
+
     } catch (err) {
-      console.error(err);
-      setError("The oracle failed to respond. Check your connection.");
+      console.error("Quiz Start Error:", err);
+      
+      let errorMsg = err.message || "The oracle failed to respond.";
+      let debugInfo = "";
+
+      // --- DEBUGGING: Fetch Available Models ---
+      try {
+        // NOTE: Ensure getAvailableModels is exported from services/gemini.js
+        const models = await getAvailableModels();
+        debugInfo = `\n\n[DEBUG - Available Models]:\n${models}\n\n(Ensure your code uses one of these exact names)`;
+      } catch (debugErr) {
+        debugInfo = "\n\n[DEBUG]: Could not fetch model list.";
+      }
+
+      setError(errorMsg + debugInfo);
       setStep('config');
     }
   };
@@ -130,12 +149,14 @@ const QuizPage = () => {
     if (currentQIndex < questions.length - 1) {
       setCurrentQIndex(currentQIndex + 1);
     } else {
+      // Calculate Final Score
       let finalScore = 0;
       questions.forEach((q, idx) => {
         if (userAnswers[idx] === q.correctIndex) finalScore++;
       });
+      
+      // Save to DB
       if (user) {
-        // Updated call with full data
         saveQuizResult(decodeURIComponent(topic), finalScore, questions.length, questions, userAnswers);
       }
       setStep('result');
@@ -157,11 +178,12 @@ const QuizPage = () => {
     setSelectedAI(aiType);
     const formattedOptions = options.map((opt, i) => `${String.fromCharCode(65+i)}) ${opt}`).join('\n');
     const vividPrompt = `I am studying "${decodeURIComponent(topic)}". \n\nPlease explain the concept behind this question vividly using real-world analogies:\n\nQuestion: "${questionText}"\n\nOptions:\n${formattedOptions}\n\nProvide a thorough exploration of why the correct answer is correct and why others are wrong.`;
+    
     navigator.clipboard.writeText(vividPrompt);
     setShowAIModal(true);
   };
 
-  // --- AI MODAL RENDER ---
+  // --- AI MODAL CONFIG ---
   const getAIConfig = () => {
     return selectedAI === 'gemini' ? {
       name: 'Gemini',
@@ -184,9 +206,11 @@ const QuizPage = () => {
     <>
       <SEO 
         title={`${decodeURIComponent(topic)} Quiz`}
-        description={`Take a free AI-generated quiz on ${decodeURIComponent(topic)} for HPRCA TGT Non-Medical preparation. Test your knowledge now.`}
+        description={`Take a free AI-generated quiz on ${decodeURIComponent(topic)} for HPRCA TGT Non-Medical preparation.`}
         keywords={`Quiz, ${decodeURIComponent(topic)}, MCQ, Practice, TGT Exam`}
       />
+
+      {/* --- AI MODAL --- */}
       {showAIModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-md animate-in fade-in duration-300">
           <div className="bg-white rounded-[2rem] shadow-2xl max-w-sm w-full p-8 relative animate-in zoom-in-95 duration-300 border border-white/20">
@@ -224,6 +248,7 @@ const QuizPage = () => {
         </div>
       )}
 
+      {/* --- STEP 1: CONFIG --- */}
       {step === 'config' && (
         <QuizConfig 
           topic={topic} 
@@ -235,8 +260,10 @@ const QuizPage = () => {
         />
       )}
 
+      {/* --- STEP 2: LOADING --- */}
       {step === 'loading' && <QuizLoading />}
 
+      {/* --- STEP 3: GAME --- */}
       {step === 'quiz' && (
         <QuizGame 
           questions={questions}
@@ -250,6 +277,7 @@ const QuizPage = () => {
         />
       )}
 
+      {/* --- STEP 4: RESULT --- */}
       {step === 'result' && (
         <QuizResult 
           questions={questions}
