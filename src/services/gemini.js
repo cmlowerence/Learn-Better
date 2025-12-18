@@ -14,16 +14,15 @@ const genAI = new GoogleGenerativeAI(apiKey);
  */
 export const generateQuizQuestions = async (topic, count = 5, difficulty = "medium", type = "concept") => {
   // 1. Input Validation
-  const safeCount = Math.min(Math.max(1, Number(count) || 5), 20); // Cap at 20 to prevent timeouts
+  const safeCount = Math.min(Math.max(1, Number(count) || 5), 20);
   if (!topic || typeof topic !== "string") throw new Error("Invalid topic provided.");
   if (!apiKey) throw new Error("API Key is missing. Check .env file.");
 
   try {
     // 2. Select Model
-    // Use 'gemini-1.5-flash' for speed and stability.
-    // If you have access to 2.0, use 'gemini-2.0-flash-exp'
+    // UPDATED: Changed to "gemini-2.0-flash" based on your available models list
     const model = genAI.getGenerativeModel({
-      model: "gemini-1.5-flash", 
+      model: "gemini-2.0-flash",
       generationConfig: { responseMimeType: "application/json" }
     });
 
@@ -52,7 +51,6 @@ export const generateQuizQuestions = async (topic, count = 5, difficulty = "medi
     const text = await response.text();
 
     // 5. Cleaning & Parsing
-    // Remove markdown code blocks if present (common AI behavior)
     let cleanText = text.trim()
       .replace(/^```json/, '') // Remove start block
       .replace(/^```/, '')     // Remove start block if just ```
@@ -66,7 +64,6 @@ export const generateQuizQuestions = async (topic, count = 5, difficulty = "medi
     } catch (parseError) {
       console.warn("Direct JSON parse failed, attempting substring extraction...");
       
-      // Fallback: Find the first '[' and last ']'
       const first = cleanText.indexOf("[");
       const last = cleanText.lastIndexOf("]");
       
@@ -81,21 +78,20 @@ export const generateQuizQuestions = async (topic, count = 5, difficulty = "medi
   } catch (error) {
     console.error("Gemini Service Error:", error);
     
-    // Pass specific error messages up to the UI
     const msg = error.message.toLowerCase();
     if (msg.includes("404") || msg.includes("not found")) {
       throw new Error("Model not found. The API Key might be invalid or the model name is wrong.");
     } else if (msg.includes("429")) {
       throw new Error("Rate limit exceeded. Please wait a moment.");
     } else {
-      throw error; // Re-throw original error
+      throw error; 
     }
   }
 };
 
 /**
  * DEBUG HELPER: Lists available models for your API key.
- * This helps diagnose "404 Model Not Found" errors.
+ * Kept here in case you need to debug again later.
  */
 export const getAvailableModels = async () => {
   if (!apiKey) return "No API Key available.";
@@ -111,7 +107,6 @@ export const getAvailableModels = async () => {
 
     const data = await response.json();
     
-    // Filter to only show models that can generate content
     const modelNames = data.models
       .filter(m => m.supportedGenerationMethods.includes("generateContent"))
       .map(m => m.name.replace("models/", ""))
