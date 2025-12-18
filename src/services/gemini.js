@@ -1,52 +1,33 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-// Use process.env for Next.js. 
-// Ensure this runs server-side (Server Action) to keep the key safe.
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
+const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY || "");
 
-export const generateQuizQuestions = async (topic, count = 5, difficulty = "medium") => {
-  // 1. Input Sanitization
-  const cleanCount = Math.min(Math.max(1, Number(count) || 5), 10); // Cap at 10 for speed
-  const cleanDiff = String(difficulty).slice(0, 20);
-  
-  if (!topic) throw new Error("Invalid topic provided.");
+// ... (keep your existing generateQuizQuestions function here) ...
+
+// NEW: Helper to list actual available models for debugging
+export const getAvailableModels = async () => {
+  const apiKey = import.meta.env.GEMINI_API_KEY;
+  if (!apiKey) return "No API Key found in env.";
 
   try {
-    // 2. Model Selection
-    // 'gemini-2.0-flash-exp' is great but experimental. 
-    // Fallback to 'gemini-1.5-flash' if you hit stability issues.
-    const model = genAI.getGenerativeModel({
-      model: "gemini-2.0-flash-exp", 
-      generationConfig: { 
-        responseMimeType: "application/json",
-        temperature: 0.7, // Add some creativity but keep it focused
-      }
-    });
+    // Direct REST call is often more reliable for listing than the client SDK
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`
+    );
+    
+    if (!response.ok) {
+      return `List Failed: ${response.status} ${response.statusText}`;
+    }
 
-    // 3. Structured Prompting (Crucial for consistent JSON)
-    const prompt = `
-      You are a teacher. Generate ${cleanCount} multiple-choice questions about "${topic}".
-      Difficulty Level: ${cleanDiff}.
+    const data = await response.json();
+    // Filter for "generateContent" capable models to keep list clean
+    const names = data.models
+      .filter(m => m.supportedGenerationMethods.includes("generateContent"))
+      .map(m => m.name.replace("models/", "")) // remove 'models/' prefix
+      .join(", ");
       
-      Return a raw JSON array. Each object in the array MUST follow this exact structure:
-      {
-        "question": "The question text here?",
-        "options": ["Option A", "Option B", "Option C", "Option D"],
-        "answer": "The correct option text (must match one of the options exactly)",
-        "explanation": "Brief explanation of why the answer is correct"
-      }
-    `;
-
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const text = response.text();
-
-    // 4. Parse
-    const quizData = JSON.parse(text);
-    return quizData;
-
-  } catch (error) {
-    console.error("Quiz Generation Error:", error);
-    throw new Error("Failed to generate quiz. Please try again.");
+    return names || "No content generation models found.";
+  } catch (err) {
+    return "Network error fetching model list.";
   }
 };
