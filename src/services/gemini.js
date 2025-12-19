@@ -1,35 +1,42 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-// Initialize the API
 const apiKey = import.meta.env.VITE_GEMINI_API_KEY || "";
 const genAI = new GoogleGenerativeAI(apiKey);
 
-// Helper function to delay execution
+// Helper to pause execution
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 /**
- * Generates quiz questions using Google Gemini.
- * Includes automatic retry for rate limits (429 errors).
+ * Generates quiz questions with MODEL FALLBACK.
+ * If one model is rate-limited or missing, it tries the next one.
  */
 export const generateQuizQuestions = async (topic, count = 5, difficulty = "medium", type = "concept") => {
-  // 1. Input Validation
+  // 1. Validation
   const safeCount = Math.min(Math.max(1, Number(count) || 5), 20);
   if (!topic || typeof topic !== "string") throw new Error("Invalid topic provided.");
   if (!apiKey) throw new Error("API Key is missing. Check .env file.");
 
-  // Retry configuration
-  const MAX_RETRIES = 3;
-  let attempt = 0;
+  // 2. Define the Priority List of Models to try
+  // We use the exact names from your debug list
+  const MODELS_TO_TRY = [
+    "gemini-2.5-flash",      // Priority 1: Newest
+    "gemini-2.0-flash-exp",  // Priority 2: Experimental Channel
+    "gemini-flash-latest",   // Priority 3: Stable Alias
+    "gemini-2.0-flash"       // Priority 4: Previous Attempt
+  ];
 
-  while (attempt < MAX_RETRIES) {
+  let lastError = null;
+
+  // 3. Loop through models until one works
+  for (const modelName of MODELS_TO_TRY) {
     try {
-      // 2. Select Model (gemini-2.0-flash is confirmed working for your key)
+      console.log(`Attempting to generate with model: ${modelName}...`);
+      
       const model = genAI.getGenerativeModel({
-        model: "gemini-2.0-flash",
+        model: modelName,
         generationConfig: { responseMimeType: "application/json" }
       });
 
-      // 3. Construct Prompt
       const prompt = `
         You are a strict JSON generator.
         Generate a quiz with exactly ${safeCount} questions about "${topic}".
@@ -44,16 +51,16 @@ export const generateQuizQuestions = async (topic, count = 5, difficulty = "medi
           "correctIndex": number (0-3),
           "explanation": "string (brief explanation)"
         }
-
-        Do not include markdown formatting like \`\`\`json. Just the raw JSON.
+        
+        Do not include markdown.
       `;
 
-      // 4. API Call
+      // API Call
       const result = await model.generateContent(prompt);
       const response = await result.response;
       const text = await response.text();
 
-      // 5. Cleaning & Parsing
+      // Parse Logic
       let cleanText = text.trim()
         .replace(/^```json/, '')
         .replace(/^```/, '')
@@ -62,47 +69,37 @@ export const generateQuizQuestions = async (topic, count = 5, difficulty = "medi
       try {
         const parsed = JSON.parse(cleanText);
         if (!Array.isArray(parsed)) throw new Error("Output is not an array");
-        return parsed; // Success! Return immediately.
-      } catch (parseError) {
-        // Fallback for messy JSON
+        return parsed; // SUCCESS! Return result and exit loop.
+      } catch (e) {
+        // Fallback extraction
         const first = cleanText.indexOf("[");
         const last = cleanText.lastIndexOf("]");
-        if (first === -1 || last === -1) throw new Error("No JSON array found in response.");
+        if (first === -1) throw new Error("No JSON found");
         const extracted = cleanText.slice(first, last + 1);
         return JSON.parse(extracted);
       }
 
     } catch (error) {
-      const msg = error.message ? error.message.toLowerCase() : "";
+      console.warn(`Failed with ${modelName}:`, error.message);
+      lastError = error;
       
-      // Check specifically for Rate Limit (429)
-      if (msg.includes("429") || msg.includes("rate limit") || msg.includes("quota")) {
-        attempt++;
-        console.warn(`Rate limit hit. Retrying in ${attempt * 2} seconds... (Attempt ${attempt}/${MAX_RETRIES})`);
-        
-        if (attempt >= MAX_RETRIES) {
-          throw new Error("Rate limit exceeded. Please wait a minute before trying again.");
-        }
-        
-        // Wait 2s, 4s, then 6s
-        await delay(attempt * 2000);
-        continue; // Retry loop
+      // If it's a Rate Limit (429), wait 2 seconds before trying the NEXT model
+      if (error.message.includes("429")) {
+        await delay(2000);
       }
-
-      // If it's NOT a rate limit error, throw immediately (don't retry 404s)
-      console.error("Gemini Service Error:", error);
-      if (msg.includes("404") || msg.includes("not found")) {
-        throw new Error("Model not found. The API Key might be invalid or the model name is wrong.");
-      } else {
-        throw error;
-      }
+      // If it's a 404 (Model not found), just loop immediately to the next one
+      continue;
     }
   }
+
+  // 4. If all models fail, throw the last error
+  console.error("All models failed.");
+  throw new Error(
+    "Quiz generation failed. Rate limit exceeded on all available models. Please wait 1 minute."
+  );
 };
 
-/**
- * DEBUG HELPER: Lists available models for your API key.
- */
+// ... keep getAvailableModels same as before ...
 export const getAvailableModels = async () => {
   if (!apiKey) return "No API Key available.";
   try {
