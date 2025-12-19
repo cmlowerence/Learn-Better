@@ -125,14 +125,7 @@ const LoginPage = () => {
             {!isLoading && <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />}
           </button>
         </form>
-
-        <div className="mt-8 pt-8 border-t border-white/5 text-center">
-            <p className="text-indigo-200/40 text-[10px] font-black uppercase tracking-widest mb-4">Or continue as guest</p>
-            <button 
-                onClick={() => navigate('/')}
-                className="w-full bg-white/5 hover:bg-white/10 text-indigo-200 font-bold py-3.5 rounded-2xl border border-white/5 transition-all flex items-center justify-center gap-3 text-sm"
-            >
-              <div className="text-center mb-6">
+<div className="text-center mb-6">
   <p className="text-gray-400 text-sm">
     Don't have an account?{' '}
     <button 
@@ -143,6 +136,14 @@ const LoginPage = () => {
     </button>
   </p>
 </div>
+
+        <div className="mt-8 pt-8 border-t border-white/5 text-center">
+            <p className="text-indigo-200/40 text-[10px] font-black uppercase tracking-widest mb-4">Or continue as guest</p>
+            <button 
+                onClick={() => navigate('/')}
+                className="w-full bg-white/5 hover:bg-white/10 text-indigo-200 font-bold py-3.5 rounded-2xl border border-white/5 transition-all flex items-center justify-center gap-3 text-sm"
+            >
+              
 
                 <UserX className="w-4 h-4" /> Skip Login
             </button>
