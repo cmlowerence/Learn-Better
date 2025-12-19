@@ -1,154 +1,113 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-const apiKey = import.meta.env.VITE_GEMINI_API_KEY || "";
-const genAI = new GoogleGenerativeAI(apiKey);
-
-const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+const API_KEYS = [
+  import.meta.env.VITE_GEMINI_API_KEY,
+  import.meta.env.VITE_GEMINI_API_KEY_1,
+  import.meta.env.VITE_GEMINI_API_KEY_2,
+  import.meta.env.VITE_GEMINI_API_KEY_3
+].filter(Boolean);
 
 const MODELS_TO_TRY = [
   "gemini-2.0-flash-exp",
-  "gemini-flash-latest",
-  "gemini-pro"
+  "gemini-2.0-flash",
+  "gemini-exp-1206",
+  "gemini-flash-latest"
 ];
 
-/**
- * Generates quiz questions with MODEL FALLBACK.
- */
-export const generateQuizQuestions = async (topic, count = 5, difficulty = "medium", type = "concept") => {
-  const safeCount = Math.min(Math.max(1, Number(count) || 5), 50);
-  if (!topic || typeof topic !== "string") throw new Error("Invalid topic provided.");
-  if (!apiKey) throw new Error("API Key is missing. Check .env file.");
+const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+// Rotates keys to avoid 429 errors
+const generateWithKeyRotation = async (modelName, prompt, jsonMode = true) => {
+  if (API_KEYS.length === 0) throw new Error("No API Keys found.");
+
+  const shuffledKeys = [...API_KEYS].sort(() => 0.5 - Math.random());
   let lastError = null;
 
-  for (const modelName of MODELS_TO_TRY) {
+  for (const apiKey of shuffledKeys) {
     try {
+      const genAI = new GoogleGenerativeAI(apiKey);
       const model = genAI.getGenerativeModel({
         model: modelName,
-        generationConfig: { responseMimeType: "application/json" }
+        generationConfig: jsonMode ? { responseMimeType: "application/json" } : {}
       });
-
-      const prompt = `
-        You are a strict JSON generator.
-        Generate a quiz with exactly ${safeCount} questions about "${topic}".
-        Difficulty: ${difficulty}.
-        Focus: ${type}.
-
-        Output must be a raw JSON array of objects.
-        Schema per object:
-        {
-          "question": "string",
-          "options": ["string", "string", "string", "string"],
-          "correctIndex": number (0-3),
-          "explanation": "string (brief explanation)"
-        }
-        
-        Do not include markdown.
-      `;
 
       const result = await model.generateContent(prompt);
       const response = await result.response;
-      const text = await response.text();
-
-      let cleanText = text.trim()
-        .replace(/^```json/, '')
-        .replace(/^```/, '')
-        .replace(/```$/, '');
-
-      try {
-        const parsed = JSON.parse(cleanText);
-        if (!Array.isArray(parsed)) throw new Error("Output is not an array");
-        return parsed;
-      } catch (e) {
-        const first = cleanText.indexOf("[");
-        const last = cleanText.lastIndexOf("]");
-        if (first === -1) throw new Error("No JSON found");
-        const extracted = cleanText.slice(first, last + 1);
-        return JSON.parse(extracted);
-      }
+      return await response.text();
 
     } catch (error) {
-      console.warn(`Quiz Gen Failed with ${modelName}:`, error.message);
-      lastError = error;
-      
-      if (error.message.includes("429")) {
-        await delay(2000);
+      const isRateLimit = error.message.includes("429") || error.message.includes("503");
+      if (isRateLimit) {
+        console.warn(`Key limit hit (${modelName}). Switching...`);
+        lastError = error;
+        continue;
       }
-      continue;
+      throw error;
     }
   }
-
-  console.error("All models failed.");
-  throw new Error(
-    "Quiz generation failed. Rate limit exceeded on all available models. Please wait 1 minute."
-  );
+  throw lastError || new Error(`All keys failed for ${modelName}`);
 };
 
-/**
- * Generates Flashcards including a REFERENCE tag.
- */
-export const generateFlashcards = async (topic) => {
-  if (!topic) throw new Error("Invalid topic provided.");
-  if (!apiKey) throw new Error("API Key is missing.");
+export const generateQuizQuestions = async (topic, count = 5, difficulty = "medium", type = "concept") => {
+  const safeCount = Math.min(Math.max(1, Number(count) || 5), 50);
+  if (!topic) throw new Error("Invalid topic.");
 
   for (const modelName of MODELS_TO_TRY) {
     try {
-      const model = genAI.getGenerativeModel({
-        model: modelName,
-        generationConfig: { responseMimeType: "application/json" }
-      });
-
       const prompt = `
-        Create 10 high-quality educational flashcards for the topic: "${topic}".
-        Focus on key definitions, formulas, important dates, or sections (if legal/act).
-        
-        Return strictly a JSON array of objects with these keys:
-        - "front": The question or term.
-        - "back": The answer or definition.
-        - "reference": A short context tag (e.g., "Physics Formula", "Section 12", "History", "Vocabulary").
-        
-        Example: 
-        [
-          {"front": "Newton's 2nd Law", "back": "F = ma", "reference": "Physics Formula"}, 
-          {"front": "Capital of France", "back": "Paris", "reference": "Geography"}
-        ]
-        
-        Do not add markdown formatting. Just the raw JSON array.
+        Generate a quiz with exactly ${safeCount} questions about "${topic}".
+        Difficulty: ${difficulty}. Focus: ${type}.
+        Output: JSON array of objects.
+        Schema: { "question": "string", "options": ["string", "string", "string", "string"], "correctIndex": number, "explanation": "string" }
       `;
 
-      const result = await model.generateContent(prompt);
-      const response = await result.response;
-      const text = await response.text();
-      
-      const cleanText = text.trim()
-        .replace(/^```json/, '')
-        .replace(/^```/, '')
-        .replace(/```$/, '');
+      const text = await generateWithKeyRotation(modelName, prompt, true);
+      const cleanText = text.replace(/```json|```/g, '').trim();
 
-      return JSON.parse(cleanText);
-
+      try {
+        return JSON.parse(cleanText);
+      } catch (e) {
+        const match = cleanText.match(/\[.*\]/s);
+        if (match) return JSON.parse(match[0]);
+      }
     } catch (error) {
-      console.warn(`Flashcard Gen Failed with ${modelName}:`, error.message);
-      if (error.message.includes("429")) await delay(2000);
-      continue;
+      console.warn(`${modelName} failed. Retrying...`);
+      await delay(500);
     }
   }
+  throw new Error("Quiz generation failed. Please wait a moment.");
+};
 
-  throw new Error("Flashcard generation failed. Please try again later.");
+export const generateFlashcards = async (topic) => {
+  if (!topic) throw new Error("Invalid topic.");
+
+  for (const modelName of MODELS_TO_TRY) {
+    try {
+      const prompt = `
+        Create 10 flashcards for "${topic}".
+        Output: JSON array of objects.
+        Schema: { "front": "term", "back": "definition", "reference": "context tag" }
+      `;
+
+      const text = await generateWithKeyRotation(modelName, prompt, true);
+      const cleanText = text.replace(/```json|```/g, '').trim();
+      return JSON.parse(cleanText);
+    } catch (error) {
+      console.warn(`${modelName} failed. Retrying...`);
+      await delay(500);
+    }
+  }
+  throw new Error("Flashcard generation failed.");
 };
 
 export const getAvailableModels = async () => {
-  if (!apiKey) return "No API Key available.";
+  if (API_KEYS.length === 0) return "No API Keys.";
   try {
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
-    if (!response.ok) return `Error ${response.status}: ${response.statusText}`;
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${API_KEYS[0]}`);
+    if (!response.ok) return "Error fetching models";
     const data = await response.json();
-    const modelNames = data.models
-      .filter(m => m.supportedGenerationMethods.includes("generateContent"))
-      .map(m => m.name.replace("models/", ""))
-      .join(", ");
-    return modelNames || "No compatible models found.";
+    return data.models.map(m => m.name.replace("models/", "")).join(", ");
   } catch (err) {
-    return "Network error: Could not fetch model list.";
+    return "Network error.";
   }
 };
