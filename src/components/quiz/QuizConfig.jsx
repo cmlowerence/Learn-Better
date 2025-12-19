@@ -35,7 +35,7 @@ const QuizConfig = ({ topic, config, setConfig, onStart, onBack, error }) => {
               <div className="flex items-center gap-4 sm:gap-6">
                 <input 
                   type="range" 
-                  min="3" max="15" 
+                  min="3" max="30" 
                   value={config.count}
                   onChange={(e) => setConfig({...config, count: e.target.value})}
                   className="w-full h-3 bg-gray-200 rounded-full appearance-none cursor-pointer accent-indigo-600 hover:accent-indigo-700"
