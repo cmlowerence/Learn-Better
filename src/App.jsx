@@ -7,6 +7,7 @@ import MistakesPage from './pages/MistakesPage';
 import FlashcardPage from './pages/FlashcardPage'; // FIX: Corrected Typos
 import NotFound from './pages/NotFound';
 import LoginPage from './pages/LoginPage';
+import SignupPage from './pages/SignupPage';
 import LeaderboardPage from './pages/LeaderboardPage';
 import HistoryPage from './pages/HistoryPage';
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -394,6 +395,7 @@ const AppWrapper = () => {
         <Router>
           <Routes>
             <Route path="/login" element={<LoginPage />} />
+            <Route path="/signup" element={<SignupPage />} />
             <Route path="/" element={<App />} />
             <Route path="/quiz/:topic" element={<QuizPage />} />
             <Route path="/mistakes" element={<MistakesPage />} />
