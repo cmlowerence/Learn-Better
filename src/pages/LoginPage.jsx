@@ -2,35 +2,37 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import SEO from '../components/SEO'; 
-import { Lock, User, ArrowRight, Atom, Sparkles, UserX } from 'lucide-react';
+import { Lock, User, ArrowRight, Atom, Sparkles, UserX, CheckCircle } from 'lucide-react';
 
 const LoginPage = () => {
   const [username, setUsername] = useState('');
   const [passkey, setPasskey] = useState('');
   const [error, setError] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   
-  // We use the 'login' function from context which updates the App State immediately
-  const { login } = useAuth(); 
+  const { login } = useAuth();
   const navigate = useNavigate();
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setError('');
+    setSuccessMsg('');
     setIsLoading(true);
 
-    // Call the centralized login function (AuthContext)
+    // Call the centralized login function
     const success = await login(username, passkey);
 
     if (success) {
-      // If success, the Context has already updated the 'user' state.
-      // We just need to redirect.
-      navigate('/');
+      setSuccessMsg('Login successful! Redirecting...');
+      // Wait 1 second so user sees the success message
+      setTimeout(() => {
+        navigate('/');
+      }, 1000);
     } else {
       setError('The credentials provided do not match our records.');
+      setIsLoading(false);
     }
-    
-    setIsLoading(false);
   };
 
   return (
@@ -63,6 +65,13 @@ const LoginPage = () => {
               {error}
             </div>
           )}
+
+          {successMsg && (
+            <div className="bg-emerald-500/20 text-emerald-200 text-sm font-bold p-4 rounded-xl border border-emerald-500/30 flex items-center gap-3 animate-bounce">
+              <CheckCircle className="w-5 h-5 text-emerald-400" />
+              {successMsg}
+            </div>
+          )}
           
           <div className="space-y-5">
             <div className="relative group">
@@ -76,6 +85,7 @@ const LoginPage = () => {
                   onChange={(e) => setUsername(e.target.value)}
                   className="block w-full pl-14 pr-5 py-4 bg-gray-900/50 border border-gray-700 rounded-2xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all font-medium"
                   placeholder="Username"
+                  disabled={isLoading || successMsg}
                />
             </div>
 
@@ -90,17 +100,18 @@ const LoginPage = () => {
                   onChange={(e) => setPasskey(e.target.value)}
                   className="block w-full pl-14 pr-5 py-4 bg-gray-900/50 border border-gray-700 rounded-2xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all font-medium"
                   placeholder="Passkey"
+                  disabled={isLoading || successMsg}
                />
             </div>
           </div>
 
           <button
             type="submit"
-            disabled={isLoading}
+            disabled={isLoading || successMsg}
             className="w-full bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-bold py-4 rounded-2xl shadow-lg shadow-indigo-900/50 transform hover:-translate-y-1 transition-all duration-300 flex items-center justify-center gap-3 group text-lg disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isLoading ? 'Authenticating...' : 'Authenticate'} 
-            {!isLoading && <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />}
+            {successMsg ? 'Verified!' : (isLoading ? 'Authenticating...' : 'Authenticate')} 
+            {!isLoading && !successMsg && <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />}
           </button>
         </form>
 
