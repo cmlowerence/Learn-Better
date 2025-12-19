@@ -31,7 +31,8 @@ const Header = ({ toggleSidebar }) => {
                <div className="flex items-center gap-3 pl-1 pr-4 py-1 rounded-full border border-gray-200 shadow-sm hover:shadow-md transition-shadow bg-white">
                   {/* Clickable Avatar to go to stats */}
                   <button onClick={() => navigate('/leaderboard')} className="transition-transform hover:scale-110">
-                    <UserAvatar avatarId={user.avatarId} size="sm" />
+                    {/* Fallback to 'student' avatar if the DB hasn't set one yet */}
+                    <UserAvatar avatarId={user.avatarId || 'student'} size="sm" />
                   </button>
 
                   <div className="h-4 w-px bg-gray-200"></div>
