@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/AuthContext'; // Keep this if you use it elsewhere
 import SEO from '../components/SEO'; 
 import { Lock, User, ArrowRight, Atom, Sparkles, UserX } from 'lucide-react';
 
@@ -8,26 +8,60 @@ const LoginPage = () => {
   const [username, setUsername] = useState('');
   const [passkey, setPasskey] = useState('');
   const [error, setError] = useState('');
-  const { login } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
+  const { login } = useAuth(); // We might override this logic
   const navigate = useNavigate();
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    const success = login(username, passkey);
-    if (success) {
-      navigate('/');
-    } else {
-      setError('The credentials provided do not match the archives.');
+    setError('');
+    setIsLoading(true);
+
+    try {
+      // 1. Call your new Vercel Backend
+      const response = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, passkey }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        // 2. Save the data to LocalStorage so your app works as before
+        localStorage.setItem('tgt_current_user', JSON.stringify({
+           username: data.user.username,
+           role: data.user.role,
+           loginTime: new Date().toISOString()
+        }));
+        
+        // 3. Restore History from Database
+        if(data.user.quiz_history) {
+           localStorage.setItem(`tgt_detailed_history_${data.user.username}`, JSON.stringify(data.user.quiz_history));
+        }
+        if(data.user.quiz_progress) {
+           localStorage.setItem(`tgt_progress_${data.user.username}`, JSON.stringify(data.user.quiz_progress));
+        }
+
+        // 4. Update Context (Optional, if your context just reads localStorage, this works automatically)
+        // login(username, passkey); 
+        
+        navigate('/');
+      } else {
+        setError(data.error || 'The credentials provided do not match the archives.');
+      }
+    } catch (err) {
+      setError('Connection failed. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
     <div className="min-h-screen bg-gray-900 flex items-center justify-center p-4 relative overflow-hidden font-sans">
-      <SEO 
-        title="Login" 
-        description="Secure access portal for TGT Explorer students." 
-      />
+      <SEO title="Login" description="Secure access portal for TGT Explorer students." />
       
+      {/* Background Effects */}
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0">
         <div className="absolute top-1/4 left-1/4 w-[600px] h-[600px] bg-indigo-600 rounded-full mix-blend-screen filter blur-[120px] opacity-20 animate-pulse"></div>
         <div className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-violet-600 rounded-full mix-blend-screen filter blur-[120px] opacity-20 animate-pulse delay-1000"></div>
@@ -40,7 +74,7 @@ const LoginPage = () => {
           </div>
           <h1 className="text-4xl font-black text-white mb-3 tracking-tight">TGT Explorer</h1>
           <p className="text-indigo-200 text-sm font-medium flex items-center justify-center gap-2">
-            <Sparkles className="w-3.5 h-3.5" /> Secure Access Portal
+            <Sparkles className="w-3.5 h-3.5" /> Database Connected
           </p>
         </div>
 
@@ -84,9 +118,11 @@ const LoginPage = () => {
 
           <button
             type="submit"
-            className="w-full bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-bold py-4 rounded-2xl shadow-lg shadow-indigo-900/50 transform hover:-translate-y-1 transition-all duration-300 flex items-center justify-center gap-3 group text-lg"
+            disabled={isLoading}
+            className="w-full bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-bold py-4 rounded-2xl shadow-lg shadow-indigo-900/50 transform hover:-translate-y-1 transition-all duration-300 flex items-center justify-center gap-3 group text-lg disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Authenticate <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+            {isLoading ? 'Authenticating...' : 'Authenticate'} 
+            {!isLoading && <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />}
           </button>
         </form>
 
@@ -105,5 +141,3 @@ const LoginPage = () => {
 };
 
 export default LoginPage;
-
-
