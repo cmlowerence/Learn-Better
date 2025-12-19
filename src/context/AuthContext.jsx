@@ -1,5 +1,4 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
-import { ALLOWED_USERS } from '../data/users'; 
 import { syllabusData } from '../syllabusData';
 
 const AuthContext = createContext(null);
@@ -8,6 +7,7 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // 1. Initialize: Check if user is already logged in on this device
   useEffect(() => {
     const storedUser = localStorage.getItem('tgt_current_user');
     if (storedUser) {
@@ -16,63 +16,74 @@ export const AuthProvider = ({ children }) => {
     setLoading(false);
   }, []);
 
-  const login = (username, passkey) => {
-    const foundUser = ALLOWED_USERS.find(
-      u => u.username.toLowerCase() === username.trim().toLowerCase() && u.passkey === passkey
-    );
+  // 2. Login: Connect to Vercel Database
+  const login = async (username, passkey) => {
+    try {
+      const response = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, passkey }),
+      });
 
-    if (foundUser) {
-      const savedProfileKey = `tgt_profile_${foundUser.username}`;
-      const savedProfile = JSON.parse(localStorage.getItem(savedProfileKey) || '{}');
+      const data = await response.json();
 
-      const userData = { 
-        ...foundUser, 
-        ...savedProfile, 
-        loginTime: new Date().toISOString() 
-      };
-      
-      setUser(userData);
-      localStorage.setItem('tgt_current_user', JSON.stringify(userData));
-      return true;
+      if (response.ok && data.success) {
+        // A. Create Session Object
+        const userData = { 
+          username: data.user.username, 
+          role: data.user.role,
+          avatarId: data.user.avatarId || 'student', // Default avatar
+          loginTime: new Date().toISOString() 
+        };
+        
+        // B. Update State
+        setUser(userData);
+        localStorage.setItem('tgt_current_user', JSON.stringify(userData));
+
+        // C. SYNC: Restore History from Database to LocalStorage
+        // This ensures your charts/graphs work immediately across devices
+        if (data.user.quiz_history) {
+           localStorage.setItem(`tgt_detailed_history_${userData.username}`, JSON.stringify(data.user.quiz_history));
+        }
+        if (data.user.quiz_progress) {
+           localStorage.setItem(`tgt_progress_${userData.username}`, JSON.stringify(data.user.quiz_progress));
+        }
+
+        return true;
+      } else {
+        console.error("Login failed:", data.error);
+        return false;
+      }
+    } catch (error) {
+      console.error("Network error during login:", error);
+      return false;
     }
-    return false;
   };
 
+  // 3. Logout: Clear Session
   const logout = () => {
     setUser(null);
     localStorage.removeItem('tgt_current_user');
+    // Optional: Clear history from local device on logout for privacy
+    // localStorage.removeItem(`tgt_detailed_history_${user?.username}`);
+    // localStorage.removeItem(`tgt_progress_${user?.username}`);
   };
 
-  const updateProfile = (updates) => {
-    if (!user) return;
-    
-    const updatedUser = { ...user, ...updates };
-    setUser(updatedUser);
-    
-    localStorage.setItem('tgt_current_user', JSON.stringify(updatedUser));
-    
-    const savedProfileKey = `tgt_profile_${user.username}`;
-    const currentSaved = JSON.parse(localStorage.getItem(savedProfileKey) || '{}');
-    localStorage.setItem(savedProfileKey, JSON.stringify({ ...currentSaved, ...updates }));
-  };
-
-  const saveQuizResult = (topic, score, total, questions = [], userAnswers = {}) => {
+  // 4. Save Result: LocalStorage (Fast) + Database (Backup)
+  const saveQuizResult = async (topic, score, total, questions = [], userAnswers = {}) => {
       if (!user) return;
       
-      // 1. Identify Subject
+      // --- PART A: LOGIC TO IDENTIFY SUBJECT (Existing Logic) ---
       let subjectKey = 'unknown';
       let subjectName = 'General';
       
-      // Scan syllabusData to find which subject this topic belongs to
       Object.entries(syllabusData).forEach(([examKey, examData]) => {
-         // Check if syllabusData structure is nested (Exam -> Subjects) or flat
          const subjects = examData.subjects || { [examKey]: examData }; 
-         
          Object.entries(subjects).forEach(([subKey, subData]) => {
              if (subData.sections) {
                  subData.sections.forEach(section => {
                      if (section.topics.includes(topic) || section.title === topic) {
-                         subjectKey = subKey; // e.g., 'physics' or 'pocso'
+                         subjectKey = subKey;
                          subjectName = subData.title;
                      }
                  });
@@ -80,7 +91,9 @@ export const AuthProvider = ({ children }) => {
          });
       });
 
-      // 2. Update Simple Progress Summary
+      // --- PART B: UPDATE LOCAL STORAGE (Immediate Feedback) ---
+      
+      // Update Summary
       const summaryKey = `tgt_progress_${user.username}`;
       const currentSummary = JSON.parse(localStorage.getItem(summaryKey) || '[]');
       const newSummaryEntry = { 
@@ -93,12 +106,12 @@ export const AuthProvider = ({ children }) => {
         percentage: Math.round((score / total) * 100), 
         date: new Date().toISOString() 
       };
-      localStorage.setItem(summaryKey, JSON.stringify([newSummaryEntry, ...currentSummary]));
+      const updatedSummary = [newSummaryEntry, ...currentSummary];
+      localStorage.setItem(summaryKey, JSON.stringify(updatedSummary));
 
-      // 3. Update Detailed History
+      // Update Detailed History
       const detailedKey = `tgt_detailed_history_${user.username}`;
       let detailedHistory = JSON.parse(localStorage.getItem(detailedKey) || '[]');
-      
       const newDetailedEntry = { 
         id: Date.now(), 
         timestamp: new Date().toISOString(), 
@@ -111,17 +124,34 @@ export const AuthProvider = ({ children }) => {
       };
       detailedHistory.push(newDetailedEntry);
 
-      // Keep only last 10 detailed attempts per subject to save space
+      // Limit to last 20 attempts per subject to keep DB small
       const subjectEntries = detailedHistory.filter(entry => entry.subjectKey === subjectKey);
-      if (subjectEntries.length > 10) {
-        subjectEntries.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-        const itemsToRemoveCount = subjectEntries.length - 10;
-        const idsToRemove = subjectEntries.slice(0, itemsToRemoveCount).map(e => e.id);
-        detailedHistory = detailedHistory.filter(entry => !idsToRemove.includes(entry.id));
+      if (subjectEntries.length > 20) {
+        // Keep the newest 20
+        const keptEntries = detailedHistory.filter(entry => entry.subjectKey !== subjectKey); // Keep other subjects
+        const sortedSubjectEntries = subjectEntries.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)).slice(0, 20);
+        detailedHistory = [...keptEntries, ...sortedSubjectEntries];
       }
       localStorage.setItem(detailedKey, JSON.stringify(detailedHistory));
+
+      // --- PART C: SYNC TO SERVER (Background Backup) ---
+      try {
+        await fetch('/api/save_progress', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            username: user.username,
+            history: detailedHistory, // Send full updated arrays
+            progress: updatedSummary
+          }),
+        });
+      } catch (err) {
+        console.error("Failed to sync progress to cloud:", err);
+        // It's okay if this fails; data is still safe in LocalStorage!
+      }
   };
 
+  // 5. Get Stats (Reads from LocalStorage, which is now synced)
   const getStudentStats = () => {
     if (!user) return null;
     
@@ -131,7 +161,6 @@ export const AuthProvider = ({ children }) => {
     const history = JSON.parse(localStorage.getItem(summaryKey) || '[]');
     const detailedHistory = JSON.parse(localStorage.getItem(detailedKey) || '[]');
 
-    // Calculate best score per topic
     const bestScoresByTopic = {};
     history.forEach(attempt => {
       if (!bestScoresByTopic[attempt.topic] || attempt.percentage > bestScoresByTopic[attempt.topic]) {
@@ -144,15 +173,11 @@ export const AuthProvider = ({ children }) => {
     const averageEfficiency = uniqueTopicsAttempted > 0 ? Math.round(totalEfficiencyScore / uniqueTopicsAttempted) : 0;
 
     const subjectProgress = {};
-    
-    // We iterate over the currently active exam data or all data. 
-    // Ideally this logic should adapt to the selected Exam Tab, but here we aggregate everything.
     Object.values(syllabusData).forEach((examData) => {
         const subjects = examData.subjects || {};
         Object.entries(subjects).forEach(([key, data]) => {
             const allTopics = data.sections ? data.sections.flatMap(s => s.topics) : [];
             const totalTopics = allTopics.length;
-            
             const attemptedTopics = allTopics.filter(t => bestScoresByTopic[t] !== undefined);
             const completedCount = attemptedTopics.length;
             
@@ -176,6 +201,7 @@ export const AuthProvider = ({ children }) => {
     return { history, efficiency: averageEfficiency, uniqueTopicsCount: uniqueTopicsAttempted, subjectProgress };
   };
   
+  // 6. Save Mistakes (Local Only for now, can be upgraded later)
   const saveMistakes = (questions, userAnswers, topic) => {
     if (!questions || !userAnswers) return;
 
@@ -186,16 +212,11 @@ export const AuthProvider = ({ children }) => {
         originTopic: topic,
         savedAt: new Date().toISOString()
       }))
-      .filter((q, index) => userAnswers[index] !== q.correctIndex); // Only keep wrong ones
+      .filter((q, index) => userAnswers[index] !== q.correctIndex); 
 
     if (mistakes.length === 0) return;
-
-    // Get existing mistakes from LocalStorage
     const existing = JSON.parse(localStorage.getItem('mistake_bin') || '[]');
-    
-    // Combine new mistakes with existing ones
     const updated = [...existing, ...mistakes];
-    
     localStorage.setItem('mistake_bin', JSON.stringify(updated));
   };
 
@@ -204,10 +225,9 @@ export const AuthProvider = ({ children }) => {
         user, 
         login, 
         logout, 
-        updateProfile, 
         saveQuizResult, 
         getStudentStats, 
-        saveMistakes, // EXPORTED HERE
+        saveMistakes, 
         loading 
     }}>
       {!loading && children}
