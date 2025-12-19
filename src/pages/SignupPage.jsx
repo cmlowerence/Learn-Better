@@ -1,21 +1,27 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext'; // Import Auth to auto-login
 import SEO from '../components/SEO';
-import { Lock, User, UserPlus, Atom, Sparkles } from 'lucide-react';
+import { Lock, User, UserPlus, Atom, Sparkles, CheckCircle } from 'lucide-react';
 
 const SignupPage = () => {
   const [username, setUsername] = useState('');
   const [passkey, setPasskey] = useState('');
   const [error, setError] = useState('');
+  const [successMsg, setSuccessMsg] = useState(''); // New state for success message
   const [isLoading, setIsLoading] = useState(false);
+  
+  const { login } = useAuth(); // We need this to auto-login
   const navigate = useNavigate();
 
   const handleSignup = async (e) => {
     e.preventDefault();
     setError('');
+    setSuccessMsg('');
     setIsLoading(true);
 
     try {
+      // 1. Create Account
       const response = await fetch('/api/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -25,14 +31,27 @@ const SignupPage = () => {
       const data = await response.json();
 
       if (response.ok && data.success) {
-        // Redirect to login after success
-        navigate('/login'); 
+        // 2. Show Success Message
+        setSuccessMsg('Account created successfully! Logging you in...');
+        
+        // 3. Auto-Login immediately
+        const loginSuccess = await login(username, passkey);
+        
+        if (loginSuccess) {
+          // Wait a tiny bit so they can read the success message, then redirect
+          setTimeout(() => {
+            navigate('/');
+          }, 1500);
+        } else {
+          // Fallback if auto-login fails for some reason
+          navigate('/login');
+        }
       } else {
         setError(data.error || 'Failed to create account.');
+        setIsLoading(false);
       }
     } catch (err) {
       setError('Connection failed. Please check your internet.');
-    } finally {
       setIsLoading(false);
     }
   };
@@ -59,10 +78,19 @@ const SignupPage = () => {
         </div>
 
         <form onSubmit={handleSignup} className="space-y-6">
+          {/* Error Message */}
           {error && (
-            <div className="bg-rose-500/10 text-rose-200 text-sm font-medium p-4 rounded-xl border border-rose-500/20 flex items-center gap-3">
-              <span className="w-2 h-2 bg-rose-400 rounded-full flex-shrink-0 animate-pulse"></span>
+            <div className="bg-rose-500/10 text-rose-200 text-sm font-medium p-4 rounded-xl border border-rose-500/20 flex items-center gap-3 animate-pulse">
+              <span className="w-2 h-2 bg-rose-400 rounded-full flex-shrink-0"></span>
               {error}
+            </div>
+          )}
+
+          {/* Success Message */}
+          {successMsg && (
+            <div className="bg-emerald-500/20 text-emerald-200 text-sm font-bold p-4 rounded-xl border border-emerald-500/30 flex items-center gap-3 animate-bounce">
+              <CheckCircle className="w-5 h-5 text-emerald-400" />
+              {successMsg}
             </div>
           )}
           
@@ -78,6 +106,7 @@ const SignupPage = () => {
                   onChange={(e) => setUsername(e.target.value)}
                   className="block w-full pl-14 pr-5 py-4 bg-gray-900/50 border border-gray-700 rounded-2xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all font-medium"
                   placeholder="Choose Username"
+                  disabled={isLoading || successMsg} 
                />
             </div>
 
@@ -92,16 +121,17 @@ const SignupPage = () => {
                   onChange={(e) => setPasskey(e.target.value)}
                   className="block w-full pl-14 pr-5 py-4 bg-gray-900/50 border border-gray-700 rounded-2xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all font-medium"
                   placeholder="Create Passkey (Min 6 chars)"
+                  disabled={isLoading || successMsg}
                />
             </div>
           </div>
 
           <button
             type="submit"
-            disabled={isLoading}
-            className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold py-4 rounded-2xl shadow-lg shadow-emerald-900/50 transform hover:-translate-y-1 transition-all duration-300 flex items-center justify-center gap-3 group text-lg disabled:opacity-50"
+            disabled={isLoading || successMsg}
+            className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold py-4 rounded-2xl shadow-lg shadow-emerald-900/50 transform hover:-translate-y-1 transition-all duration-300 flex items-center justify-center gap-3 group text-lg disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isLoading ? 'Creating Account...' : 'Sign Up Now'}
+            {successMsg ? 'Success!' : (isLoading ? 'Creating Account...' : 'Sign Up Now')}
           </button>
         </form>
 
