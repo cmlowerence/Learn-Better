@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
-import { HelmetProvider } from 'react-helmet-async'; // SEO: Provider
+import { HelmetProvider } from 'react-helmet-async'; 
 import { syllabusData } from './syllabusData';
 import QuizPage from './QuizPage';
 import NotFound from './pages/NotFound';
@@ -9,10 +9,10 @@ import LeaderboardPage from './pages/LeaderboardPage';
 import HistoryPage from './pages/HistoryPage';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Header from './components/layout/Header';
-import SEO from './components/SEO'; // SEO: Component
+import SEO from './components/SEO'; 
 import { 
   BookOpen, Search, Youtube, FileText, ChevronDown, 
-  BrainCircuit, Github, X 
+  BrainCircuit, Github, X, LayoutGrid 
 } from 'lucide-react';
 
 // --- GLOBAL STYLES ---
@@ -50,8 +50,7 @@ const GlobalStyles = () => (
 
 const ResourceButton = ({ type, topic, compact = false }) => {
   const navigate = useNavigate();
-  // SEO: Descriptive search queries
-  const searchQuery = `HPRCA TGT Non Medical ${topic}`; 
+  const searchQuery = `${topic} study material`; 
 
   let url = "";
   let IconComp = null;
@@ -66,7 +65,7 @@ const ResourceButton = ({ type, topic, compact = false }) => {
     ariaLabel = `Watch Youtube lectures for ${topic}`;
     colorClass = "text-red-600 bg-red-50 hover:bg-red-100 border-red-200";
   } else if (type === "google") {
-    url = `https://www.google.com/search?q=${encodeURIComponent(searchQuery + " study material notes pdf")}`;
+    url = `https://www.google.com/search?q=${encodeURIComponent(searchQuery + " notes pdf")}`;
     IconComp = Search;
     label = "Search";
     ariaLabel = `Google search for ${topic}`;
@@ -136,17 +135,15 @@ const SubjectCard = ({ subjectKey, subject, isActive, onClick }) => {
       <div className={`p-2.5 rounded-xl transition-colors ${isActive ? subject.bgColor + ' ' + subject.color : 'bg-gray-100 text-gray-500'}`}>
         <IconComponent className="w-5 h-5" />
       </div>
-      <span className="font-bold text-sm tracking-wide">{subject.title}</span>
+      <span className="font-bold text-sm tracking-wide text-left">{subject.title}</span>
     </button>
   );
 };
 
 const TopicItem = ({ topic }) => (
-  // SEO: Using <article> for individual items
   <article className="flex flex-col sm:flex-row sm:items-center justify-between p-5 bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-lg hover:border-indigo-100 transition-all duration-300 gap-4 group">
     <div className="flex items-start gap-4">
        <div className="mt-2.5 min-w-[8px] h-[8px] rounded-full bg-indigo-200 group-hover:bg-indigo-500 transition-colors" />
-       {/* SEO: Semantic Heading */}
        <h4 className="text-gray-700 font-semibold leading-relaxed text-[15px] group-hover:text-gray-900">{topic}</h4>
     </div>
     <div className="flex items-center gap-2 pl-6 sm:pl-0 opacity-80 group-hover:opacity-100 transition-opacity">
@@ -161,11 +158,9 @@ const TopicItem = ({ topic }) => (
 const SectionAccordion = ({ section, defaultOpen }) => {
   const [isOpen, setIsOpen] = useState(defaultOpen);
   return (
-    // SEO: Using <section> for grouped content
     <section className="mb-4 bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm transition-all hover:shadow-md">
       <div onClick={() => setIsOpen(!isOpen)} className="w-full flex items-center justify-between p-5 cursor-pointer bg-gradient-to-r from-transparent to-transparent hover:to-gray-50 transition-all">
         <div className="flex items-center gap-4">
-            {/* SEO: Heading hierarchy */}
             <h3 className="text-lg font-bold text-gray-800 tracking-tight">{section.title}</h3>
             <div className="flex items-center gap-1 ml-2 border-l-2 border-gray-100 pl-4">
                 <ResourceButton type="quiz" topic={section.title} compact={true} />
@@ -189,21 +184,41 @@ const SectionAccordion = ({ section, defaultOpen }) => {
 // --- MAIN DASHBOARD COMPONENT ---
 
 const App = () => {
-  const [activeSubject, setActiveSubject] = useState('physics'); 
+  // 1. New State for switching Exams (Tabs)
+  const [activeExamKey, setActiveExamKey] = useState('tgt_non_medical');
+  const [activeSubject, setActiveSubject] = useState(null); 
+  
   const [isSidebarOpen, setSidebarOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const { user } = useAuth();
+
+  // 2. Get data for the currently selected Exam
+  const currentExamData = syllabusData[activeExamKey];
+  const currentSubjects = currentExamData?.subjects || {};
   
-  // SEO Logic: Prepare data for metadata
-  const activeSubjectData = syllabusData[activeSubject] || syllabusData['physics'];
+  // 3. Effect: Set default subject when Exam changes
+  useEffect(() => {
+    const firstSubjectKey = Object.keys(currentSubjects)[0];
+    if (firstSubjectKey) {
+      setActiveSubject(firstSubjectKey);
+    }
+  }, [activeExamKey]);
+
+  // Fallback if activeSubject is null or invalid for current exam
+  const validActiveSubject = (activeSubject && currentSubjects[activeSubject]) 
+    ? activeSubject 
+    : Object.keys(currentSubjects)[0];
+
+  const activeSubjectData = currentSubjects[validActiveSubject] || { title: 'Loading...', icon: BookOpen, bgColor: 'bg-gray-100', color: 'text-gray-500', sections: [] };
   const ActiveIcon = activeSubjectData.icon || BookOpen;
 
   const toggleSidebar = () => setSidebarOpen(!isSidebarOpen);
 
+  // 4. Update Search Logic to only search within the ACTIVE EXAM
   const displayedContent = useMemo(() => {
     if (searchQuery.trim().length > 0) {
       const results = [];
-      Object.entries(syllabusData).forEach(([key, subject]) => {
+      Object.entries(currentSubjects).forEach(([key, subject]) => {
         subject.sections.forEach(section => {
           const matchingTopics = section.topics.filter(t => 
             t.toLowerCase().includes(searchQuery.toLowerCase())
@@ -216,17 +231,16 @@ const App = () => {
       });
       return results;
     }
-    return syllabusData[activeSubject]?.sections || [];
-  }, [activeSubject, searchQuery]);
+    return activeSubjectData.sections || [];
+  }, [activeExamKey, validActiveSubject, searchQuery, currentSubjects]);
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] font-sans text-gray-900 selection:bg-indigo-100 selection:text-indigo-900">
       
-      {/* --- DYNAMIC SEO INJECTION --- */}
       <SEO 
-        title={searchQuery ? `Search Results: ${searchQuery}` : `${activeSubjectData.title} Syllabus & Notes`}
-        description={`Free TGT Non-Medical resources for ${activeSubjectData.title}. Practice ${displayedContent[0]?.topics[0] || 'topics'} and more for HPRCA exams.`}
-        keywords={`TGT Non Medical, ${activeSubjectData.title}, HPRCA, Formulas, Quiz`}
+        title={searchQuery ? `Search Results: ${searchQuery}` : `${activeSubjectData.title} - ${currentExamData.label}`}
+        description={`Free syllabus and quiz resources for ${currentExamData.label}.`}
+        keywords={`${currentExamData.label}, ${activeSubjectData.title}, Quiz, Mock Test`}
       />
 
       <Header toggleSidebar={toggleSidebar} />
@@ -239,24 +253,44 @@ const App = () => {
             className={`fixed inset-y-0 left-0 transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:relative lg:translate-x-0 lg:w-72 lg:block z-30 bg-[#F8FAFC] transition-transform duration-300 ease-in-out ${isSidebarOpen ? 'bg-white shadow-2xl p-6 w-80' : ''}`}
           >
             <div className="flex justify-between items-center lg:hidden mb-8">
-               <span className="font-bold text-xl text-gray-900">Subjects</span>
+               <span className="font-bold text-xl text-gray-900">Menu</span>
                <button onClick={toggleSidebar} className="p-2 bg-gray-100 rounded-full"><X className="w-6 h-6 text-gray-600" /></button>
             </div>
-            <div className="space-y-2">
+
+            {/* --- NEW TAB SWITCHER --- */}
+            <div className="mb-6 bg-gray-200 p-1 rounded-xl flex gap-1">
               {Object.entries(syllabusData).map(([key, data]) => (
+                <button
+                  key={key}
+                  onClick={() => { setActiveExamKey(key); setSearchQuery(''); }}
+                  className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition-all duration-200 ${
+                    activeExamKey === key 
+                      ? 'bg-white text-indigo-700 shadow-sm' 
+                      : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200/50'
+                  }`}
+                >
+                  {data.label.replace('HP ', '').replace('EMRS ', '')}
+                </button>
+              ))}
+            </div>
+
+            <div className="space-y-2">
+              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 px-2">Subjects</h3>
+              {Object.entries(currentSubjects).map(([key, data]) => (
                 <SubjectCard
                   key={key}
                   subjectKey={key}
                   subject={data}
-                  isActive={activeSubject === key && searchQuery === ''}
+                  isActive={validActiveSubject === key && searchQuery === ''}
                   onClick={(key) => { setActiveSubject(key); setSearchQuery(''); if(window.innerWidth < 1024) setSidebarOpen(false); }}
                 />
               ))}
             </div>
+            
             {user && (
               <div className="mt-8 p-5 bg-gradient-to-br from-indigo-600 to-violet-600 rounded-2xl shadow-lg shadow-indigo-200 text-white">
                   <h4 className="font-bold mb-2 flex items-center gap-2"><BrainCircuit className="w-5 h-5 text-indigo-200"/> {user.username}</h4>
-                  <p className="text-xs text-indigo-100 leading-relaxed opacity-90">Keep pushing your limits. Your TGT success is loading...</p>
+                  <p className="text-xs text-indigo-100 leading-relaxed opacity-90">Keep pushing your limits!</p>
               </div>
             )}
           </nav>
@@ -270,7 +304,7 @@ const App = () => {
                  type="text"
                  aria-label="Search syllabus topics"
                  className="block w-full pl-12 pr-4 py-4 border-none rounded-2xl bg-white shadow-sm ring-1 ring-gray-200 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:shadow-lg transition-all"
-                 placeholder="Search topics (e.g., 'Thermodynamics', 'Matrices')..."
+                 placeholder={`Search inside ${currentExamData.label}...`}
                  value={searchQuery}
                  onChange={(e) => setSearchQuery(e.target.value)}
                />
@@ -278,9 +312,13 @@ const App = () => {
             
             <header className="mb-8 flex items-center justify-between">
               <div>
-                {/* SEO: H1 for main page title */}
+                <div className="flex items-center gap-2 mb-2">
+                   <span className="bg-indigo-50 text-indigo-700 text-[10px] font-bold px-2 py-1 rounded border border-indigo-100 uppercase tracking-wider">
+                     {currentExamData.label}
+                   </span>
+                </div>
                 <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">{searchQuery ? `Results for "${searchQuery}"` : activeSubjectData.title}</h1>
-                <p className="text-base text-gray-500 mt-2 font-medium">{searchQuery ? 'Showing topics across all subjects' : 'Select a section below to explore resources'}</p>
+                <p className="text-base text-gray-500 mt-2 font-medium">{searchQuery ? 'Showing matching topics' : 'Select a section below to explore resources'}</p>
               </div>
               {!searchQuery && (
                   <div className={`hidden sm:block p-4 rounded-2xl ${activeSubjectData.bgColor} bg-opacity-50`}>
@@ -325,7 +363,6 @@ const App = () => {
 
 const AppWrapper = () => {
   return (
-    // SEO: Wrapping app in HelmetProvider
     <HelmetProvider>
       <AuthProvider>
         <GlobalStyles />
