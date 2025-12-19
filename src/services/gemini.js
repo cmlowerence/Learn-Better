@@ -6,11 +6,15 @@ const genAI = new GoogleGenerativeAI(apiKey);
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const MODELS_TO_TRY = [
+  "gemini-1.5-flash",
   "gemini-2.0-flash-exp",
   "gemini-flash-latest",
   "gemini-pro"
 ];
 
+/**
+ * Generates quiz questions with MODEL FALLBACK.
+ */
 export const generateQuizQuestions = async (topic, count = 5, difficulty = "medium", type = "concept") => {
   const safeCount = Math.min(Math.max(1, Number(count) || 5), 50);
   if (!topic || typeof topic !== "string") throw new Error("Invalid topic provided.");
@@ -81,6 +85,9 @@ export const generateQuizQuestions = async (topic, count = 5, difficulty = "medi
   );
 };
 
+/**
+ * Generates Flashcards including a REFERENCE tag.
+ */
 export const generateFlashcards = async (topic) => {
   if (!topic) throw new Error("Invalid topic provided.");
   if (!apiKey) throw new Error("API Key is missing.");
@@ -93,11 +100,19 @@ export const generateFlashcards = async (topic) => {
       });
 
       const prompt = `
-        Create 10 educational flashcards for the topic: "${topic}".
+        Create 10 high-quality educational flashcards for the topic: "${topic}".
         Focus on key definitions, formulas, important dates, or sections (if legal/act).
         
-        Return strictly a JSON array of objects with "front" and "back" keys.
-        Example: [{"front": "Newton's 2nd Law", "back": "F = ma"}, {"front": "Chemical formula of Ozone", "back": "O3"}]
+        Return strictly a JSON array of objects with these keys:
+        - "front": The question or term.
+        - "back": The answer or definition.
+        - "reference": A short context tag (e.g., "Physics Formula", "Section 12", "History", "Vocabulary").
+        
+        Example: 
+        [
+          {"front": "Newton's 2nd Law", "back": "F = ma", "reference": "Physics Formula"}, 
+          {"front": "Capital of France", "back": "Paris", "reference": "Geography"}
+        ]
         
         Do not add markdown formatting. Just the raw JSON array.
       `;
