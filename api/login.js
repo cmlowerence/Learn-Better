@@ -52,7 +52,8 @@ module.exports = async function handler(request, response) {
         username: user.username,
         role: user.role,
         quiz_history: user.quiz_history || [],
-        quiz_progress: user.quiz_progress || []
+        quiz_progress: user.quiz_progress || [],
+        mistakes: user.mistakes || []
       }
     });
 
