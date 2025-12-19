@@ -1,6 +1,6 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { ALLOWED_USERS } from '../data/users'; 
-import { syllabusData } from '../data/syllabusData'; // Ensure path is correct based on your folder structure
+import { syllabusData } from '../syllabusData';
 
 const AuthContext = createContext(null);
 
