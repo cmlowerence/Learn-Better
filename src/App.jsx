@@ -3,7 +3,8 @@ import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-route
 import { HelmetProvider } from 'react-helmet-async'; 
 import { syllabusData } from './data/syllabusData'; // Check path (./data/syllabusData or ./syllabusData)
 import QuizPage from './QuizPage';
-import MistakesPage from './pages/MistakesPage'; // <--- IMPORT NEW PAGE
+import MistakesPage from './pages/MistakesPage';
+import FlashcaedPage from './pages/FlashcardPage';
 import NotFound from './pages/NotFound';
 import LoginPage from './pages/LoginPage';
 import LeaderboardPage from './pages/LeaderboardPage';
@@ -13,7 +14,7 @@ import Header from './components/layout/Header';
 import SEO from './components/SEO'; 
 import { 
   BookOpen, Search, Youtube, FileText, ChevronDown, 
-  BrainCircuit, Github, X, RefreshCcw, AlertOctagon 
+  BrainCircuit, Github, X, RefreshCcw, AlertOctagon, LayoutGrid
 } from 'lucide-react';
 
 // --- GLOBAL STYLES ---
@@ -82,6 +83,12 @@ const ResourceButton = ({ type, topic, compact = false }) => {
     label = "Quiz";
     ariaLabel = `Start AI Quiz for ${topic}`;
     colorClass = "text-purple-600 bg-purple-50 hover:bg-purple-100 border-purple-200";
+  }else if (type === "flashcard") {
+    // New Flashcard Logic
+    IconComp = LayoutGrid;
+    label = "Flashcards";
+    ariaLabel = `Study Flashcards for ${topic}`;
+    colorClass = "text-pink-600 bg-pink-50 hover:bg-pink-100 border-pink-200";
   }
 
   const handleClick = (e) => {
@@ -112,6 +119,7 @@ const ResourceButton = ({ type, topic, compact = false }) => {
       </button>
     );
   }
+  if (type === 'flashcard') navigate(`/flashcards/${encodeURIComponent(topic)}`);
 
   return (
     <a href={url} target="_blank" rel="noopener noreferrer" aria-label={ariaLabel} className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-bold transition-all hover:-translate-y-0.5 hover:shadow-sm ${colorClass}`}>
@@ -151,6 +159,7 @@ const TopicItem = ({ topic }) => (
       <ResourceButton type="youtube" topic={topic} />
       <ResourceButton type="notes" topic={topic} />
       <ResourceButton type="google" topic={topic} />
+      <ResourceButton type="flashcard" topic={topic} />
       <ResourceButton type="quiz" topic={topic} />
     </div>
   </article>
@@ -384,9 +393,8 @@ const AppWrapper = () => {
             <Route path="/login" element={<LoginPage />} />
             <Route path="/" element={<App />} />
             <Route path="/quiz/:topic" element={<QuizPage />} />
-            {/* --- NEW ROUTE --- */}
             <Route path="/mistakes" element={<MistakesPage />} />
-            {/* ----------------- */}
+            <Route path="/flashcards/:topic" element={<FlashcardPage />} />
             <Route path="/leaderboard" element={<LeaderboardPage />} />
             <Route path="/history" element={<HistoryPage />} />
             <Route path="*" element={<NotFound />} />
