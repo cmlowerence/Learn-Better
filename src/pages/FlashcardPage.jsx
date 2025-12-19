@@ -15,16 +15,15 @@ const FlashcardPage = () => {
   const [loadingTip, setLoadingTip] = useState("Curating key concepts...");
   const [error, setError] = useState(null);
 
-  // --- 0. INJECT REQUIRED CSS ---
+  // --- CSS UTILITIES ---
   const CustomStyles = () => (
     <style>{`
       .perspective-1000 { perspective: 1000px; }
       .preserve-3d { transform-style: preserve-3d; }
       .backface-hidden { backface-visibility: hidden; -webkit-backface-visibility: hidden; }
       
-      /* Hide scrollbar for Chrome, Safari and Opera */
+      /* Hide scrollbar clean implementation */
       .no-scrollbar::-webkit-scrollbar { display: none; }
-      /* Hide scrollbar for IE, Edge and Firefox */
       .no-scrollbar { -ms-overflow-style: none;  scrollbar-width: none; }
     `}</style>
   );
@@ -34,7 +33,6 @@ const FlashcardPage = () => {
     loadCards();
   }, [topic]);
 
-  // Cycle loading tips
   useEffect(() => {
     if (!loading) return;
     const tips = ["Scanning syllabus...", "Extracting key formulas...", "Formatting for memory...", "Almost ready..."];
@@ -68,6 +66,7 @@ const FlashcardPage = () => {
   const handleNext = useCallback(() => {
     if (loading || cards.length === 0) return;
     setIsFlipped(false);
+    // Small delay to allow flip animation to reset before changing content
     setTimeout(() => setCurrentIndex((prev) => (prev + 1) % cards.length), 150);
   }, [cards.length, loading]);
 
@@ -97,8 +96,6 @@ const FlashcardPage = () => {
 
 
   // --- SUB-COMPONENTS ---
-  
-  // 1. Skeleton Card (Prevents layout resizing)
   const SkeletonCard = () => (
     <div className="relative w-full h-full bg-white rounded-[2rem] border border-white/60 p-8 shadow-xl overflow-hidden">
       <div className="animate-pulse flex flex-col items-center justify-center h-full gap-4">
@@ -112,7 +109,6 @@ const FlashcardPage = () => {
     </div>
   );
 
-  // 2. Error Card
   const ErrorCard = () => (
     <div className="relative w-full h-full bg-red-50 rounded-[2rem] border border-red-100 p-8 flex flex-col items-center justify-center text-center shadow-sm">
       <AlertCircle className="w-10 h-10 text-red-500 mb-4" />
@@ -131,7 +127,7 @@ const FlashcardPage = () => {
       <CustomStyles />
       <SEO title={`${decodeURIComponent(topic)} Flashcards`} description={`Memorize ${decodeURIComponent(topic)} concepts.`} />
 
-      {/* Header - Always visible to maintain structure */}
+      {/* Header */}
       <header className="px-6 py-5 flex items-center justify-between relative z-10 shrink-0 h-20">
         <button onClick={() => navigate('/')} className="flex items-center gap-2 px-4 py-2 bg-white/70 backdrop-blur-md rounded-2xl shadow-sm font-bold text-slate-600 hover:bg-white transition-colors">
           <ArrowLeft className="w-5 h-5" /> <span className="hidden sm:inline">Back</span>
@@ -145,12 +141,12 @@ const FlashcardPage = () => {
         </button>
       </header>
 
-      {/* Main Content Area */}
+      {/* Main Content */}
       <main className="flex-1 flex flex-col items-center justify-center p-4 relative z-10 w-full max-w-4xl mx-auto">
         
         <div className="w-full max-w-2xl perspective-1000">
           
-          {/* Progress Indicator */}
+          {/* Progress */}
           <div className="flex justify-between items-end mb-4 px-2 text-slate-500 font-bold text-sm h-6">
             {!loading && !error && (
               <div className="flex items-center gap-2 animate-fade-in">
@@ -160,8 +156,7 @@ const FlashcardPage = () => {
             {loading && <span className="text-indigo-400 text-xs animate-pulse">{loadingTip}</span>}
           </div>
 
-          {/* THE CARD CONTAINER */}
-          {/* Fixed Aspect Ratio ensures no jumping */}
+          {/* CARD CONTAINER */}
           <div 
             onClick={!loading && !error ? handleFlip : undefined}
             className={`relative w-full aspect-[4/3] sm:aspect-[16/9] ${(!loading && !error) ? 'cursor-pointer' : ''}`}
@@ -174,15 +169,13 @@ const FlashcardPage = () => {
               <div className={`relative w-full h-full duration-500 preserve-3d transition-all ${isFlipped ? '[transform:rotateY(180deg)]' : ''}`}>
                 
                 {/* --- FRONT SIDE --- */}
-                {/* zIndex logic prevents ghosting */}
                 <div 
                   className="absolute inset-0 backface-hidden bg-white rounded-[2rem] border border-white/60 shadow-xl overflow-hidden"
+                  // Z-INDEX FIX: Force inactive side to be physically behind
                   style={{ zIndex: isFlipped ? 0 : 10 }}
                 >
-                  {/* Internal Flex Structure for Overflow Handling */}
                   <div className="w-full h-full flex flex-col p-6 sm:p-8">
-                    
-                    {/* Top: Decoration */}
+                    {/* Top */}
                     <div className="flex justify-between items-start shrink-0 mb-2">
                        <div className="opacity-[0.1] text-indigo-600"><Sparkles className="w-6 h-6" /></div>
                        {currentCard.reference && (
@@ -192,20 +185,20 @@ const FlashcardPage = () => {
                       )}
                     </div>
 
-                    {/* Middle: Scrollable Content */}
-                    <div className="flex-1 flex items-center justify-center overflow-y-auto no-scrollbar py-2">
-                      <h3 className="text-xl sm:text-2xl md:text-3xl font-bold text-slate-800 leading-snug text-center select-none">
+                    {/* Middle - FIXED SCROLLING & CENTERING */}
+                    <div className="flex-1 w-full flex flex-col overflow-y-auto no-scrollbar my-2">
+                      {/* 'my-auto' is the magic fix: centers if small, scrolls if big, never clips top */}
+                      <h3 className="text-lg sm:text-2xl md:text-3xl font-bold text-slate-800 leading-snug text-center select-none my-auto">
                         {currentCard.front}
                       </h3>
                     </div>
 
-                    {/* Bottom: Hint */}
+                    {/* Bottom */}
                     <div className="mt-auto shrink-0 pt-4 flex items-center justify-center gap-2 text-xs font-bold text-indigo-400 uppercase tracking-widest opacity-60">
                       <RotateCw className="w-3 h-3" /> Click to Flip
                     </div>
                   </div>
                   
-                  {/* Background Pattern */}
                   <div className="absolute inset-0 opacity-[0.03] pointer-events-none -z-10" style={{ backgroundImage: 'radial-gradient(#4f46e5 1px, transparent 1px)', backgroundSize: '24px 24px' }}></div>
                 </div>
 
@@ -213,26 +206,26 @@ const FlashcardPage = () => {
                 {/* --- BACK SIDE --- */}
                 <div 
                   className="absolute inset-0 backface-hidden [transform:rotateY(180deg)] bg-gradient-to-br from-indigo-600 to-purple-600 rounded-[2rem] shadow-xl overflow-hidden"
+                  // Z-INDEX FIX: Force inactive side to be physically behind
                   style={{ zIndex: isFlipped ? 10 : 0 }}
                 >
-                   {/* Internal Flex Structure */}
                    <div className="w-full h-full flex flex-col p-6 sm:p-8 text-white">
-                      
-                      {/* Top: Icon */}
+                      {/* Top */}
                       <div className="shrink-0 mb-4 flex justify-start">
                         <div className="bg-white/10 p-2 rounded-full backdrop-blur-sm text-indigo-100">
                           <Lightbulb className="w-5 h-5" />
                         </div>
                       </div>
 
-                      {/* Middle: Scrollable Content */}
-                      <div className="flex-1 flex items-center justify-center overflow-y-auto no-scrollbar py-2">
-                         <p className="text-lg sm:text-xl md:text-2xl font-medium leading-relaxed text-center select-none">
+                      {/* Middle - FIXED SCROLLING & CENTERING */}
+                      <div className="flex-1 w-full flex flex-col overflow-y-auto no-scrollbar my-2">
+                         {/* 'my-auto' ensures vertical centering without top-clipping on overflow */}
+                         <p className="text-lg sm:text-xl md:text-2xl font-medium leading-relaxed text-center select-none my-auto">
                            {currentCard.back}
                          </p>
                       </div>
 
-                      {/* Bottom: Label */}
+                      {/* Bottom */}
                       <div className="mt-auto shrink-0 pt-4 text-center">
                         <span className="text-[10px] font-bold text-indigo-200 uppercase tracking-widest opacity-80 border-t border-indigo-400/30 pt-4 px-8">
                           Answer
@@ -246,7 +239,7 @@ const FlashcardPage = () => {
           </div>
         </div>
 
-        {/* Controls - Fixed height wrapper prevents jumping when disabled */}
+        {/* Controls */}
         <div className="mt-8 h-20 flex items-center justify-center gap-4 sm:gap-6 w-full max-w-md">
           <button 
             onClick={(e) => { e.stopPropagation(); handlePrev(); }} 
