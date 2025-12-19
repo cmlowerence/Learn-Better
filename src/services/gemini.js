@@ -6,7 +6,6 @@ const genAI = new GoogleGenerativeAI(apiKey);
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const MODELS_TO_TRY = [
-  "gemini-1.5-flash",
   "gemini-2.0-flash-exp",
   "gemini-flash-latest",
   "gemini-pro"
