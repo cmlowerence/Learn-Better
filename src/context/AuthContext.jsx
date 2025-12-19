@@ -120,6 +120,25 @@ export const AuthProvider = ({ children }) => {
     });
     return { history, efficiency: averageEfficiency, uniqueTopicsCount: uniqueTopicsAttempted, subjectProgress };
   };
+  
+const saveMistakes = (questions, userAnswers, topic) => {
+  const mistakes = questions
+    .map((q, index) => ({
+      ...q, 
+      userSelected: userAnswers[index],
+      originTopic: topic,
+      savedAt: new Date().toISOString()
+    }))
+    .filter((q, index) => userAnswers[index] !== q.correctIndex); // Only keep wrong ones
+
+  // Get existing mistakes from LocalStorage (or DB)
+  const existing = JSON.parse(localStorage.getItem('mistake_bin') || '[]');
+  
+  // Combine and remove duplicates (optional logic)
+  const updated = [...existing, ...mistakes];
+  
+  localStorage.setItem('mistake_bin', JSON.stringify(updated));
+};
 
   return (
     <AuthContext.Provider value={{ user, login, logout, updateProfile, saveQuizResult, getStudentStats, loading }}>
