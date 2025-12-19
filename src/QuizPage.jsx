@@ -13,7 +13,8 @@ import QuizResult from './components/quiz/QuizResult';
 const QuizPage = () => {
   const { topic } = useParams();
   const navigate = useNavigate();
-  const { user, saveQuizResult } = useAuth(); 
+  // DESTRUCTURE saveMistakes HERE
+  const { user, saveQuizResult, saveMistakes } = useAuth(); 
 
   // --- MAIN STATES ---
   const [step, setStep] = useState('config'); 
@@ -21,7 +22,7 @@ const QuizPage = () => {
   const [questions, setQuestions] = useState([]);
   const [currentQIndex, setCurrentQIndex] = useState(0);
   const [userAnswers, setUserAnswers] = useState({}); 
-  const [error, setError] = useState(null); // Changed to null for cleaner initial state
+  const [error, setError] = useState(null); 
   
   // --- TTS STATES ---
   const [activeAudioId, setActiveAudioId] = useState(null);
@@ -131,12 +132,17 @@ const QuizPage = () => {
     if (currentQIndex < questions.length - 1) {
       setCurrentQIndex(currentQIndex + 1);
     } else {
+      // --- QUIZ FINISHED LOGIC ---
       let finalScore = 0;
       questions.forEach((q, idx) => {
         if (userAnswers[idx] === q.correctIndex) finalScore++;
       });
+      
       if (user) {
         saveQuizResult(decodeURIComponent(topic), finalScore, questions.length, questions, userAnswers);
+        
+        // --- SAVE MISTAKES HERE ---
+        saveMistakes(questions, userAnswers, decodeURIComponent(topic));
       }
       setStep('result');
     }
@@ -173,7 +179,6 @@ const QuizPage = () => {
         description={`AI-generated quiz on ${decodeURIComponent(topic)}.`}
       />
 
-      {/* --- ERROR TOAST (Appears at top if error exists) --- */}
       {error && step === 'config' && (
         <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-top-5 fade-in duration-300 w-[90%] max-w-lg">
           <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-xl shadow-lg flex items-start gap-3">
@@ -186,7 +191,6 @@ const QuizPage = () => {
         </div>
       )}
 
-      {/* --- AI MODAL --- */}
       {showAIModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-md animate-in fade-in duration-300">
           <div className="bg-white rounded-[2rem] shadow-2xl max-w-sm w-full p-8 relative animate-in zoom-in-95 border border-white/20">
@@ -212,7 +216,6 @@ const QuizPage = () => {
         </div>
       )}
 
-      {/* --- PAGE CONTENT --- */}
       {step === 'config' && (
         <QuizConfig 
           topic={topic} 
@@ -220,7 +223,6 @@ const QuizPage = () => {
           setConfig={setConfig} 
           onStart={startQuiz} 
           onBack={() => navigate('/')} 
-          // We handle the error display globally above now, but passing it just in case your component uses it
           error={error} 
         />
       )}
