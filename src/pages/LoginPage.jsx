@@ -132,6 +132,18 @@ const LoginPage = () => {
                 onClick={() => navigate('/')}
                 className="w-full bg-white/5 hover:bg-white/10 text-indigo-200 font-bold py-3.5 rounded-2xl border border-white/5 transition-all flex items-center justify-center gap-3 text-sm"
             >
+              <div className="text-center mb-6">
+  <p className="text-gray-400 text-sm">
+    Don't have an account?{' '}
+    <button 
+      onClick={() => navigate('/signup')} 
+      className="text-indigo-300 hover:text-white font-bold underline decoration-indigo-500/30 underline-offset-4 transition-all"
+    >
+      Create one
+    </button>
+  </p>
+</div>
+
                 <UserX className="w-4 h-4" /> Skip Login
             </button>
         </div>
