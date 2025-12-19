@@ -1,8 +1,9 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async'; 
-import { syllabusData } from './syllabusData';
+import { syllabusData } from './data/syllabusData'; // Check path (./data/syllabusData or ./syllabusData)
 import QuizPage from './QuizPage';
+import MistakesPage from './pages/MistakesPage'; // <--- IMPORT NEW PAGE
 import NotFound from './pages/NotFound';
 import LoginPage from './pages/LoginPage';
 import LeaderboardPage from './pages/LeaderboardPage';
@@ -12,7 +13,7 @@ import Header from './components/layout/Header';
 import SEO from './components/SEO'; 
 import { 
   BookOpen, Search, Youtube, FileText, ChevronDown, 
-  BrainCircuit, Github, X, LayoutGrid 
+  BrainCircuit, Github, X, RefreshCcw, AlertOctagon 
 } from 'lucide-react';
 
 // --- GLOBAL STYLES ---
@@ -184,19 +185,17 @@ const SectionAccordion = ({ section, defaultOpen }) => {
 // --- MAIN DASHBOARD COMPONENT ---
 
 const App = () => {
-  // 1. New State for switching Exams (Tabs)
   const [activeExamKey, setActiveExamKey] = useState('tgt_non_medical');
   const [activeSubject, setActiveSubject] = useState(null); 
-  
   const [isSidebarOpen, setSidebarOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const { user } = useAuth();
+  
+  const navigate = useNavigate(); // Used for the mistakes button navigation
 
-  // 2. Get data for the currently selected Exam
   const currentExamData = syllabusData[activeExamKey];
   const currentSubjects = currentExamData?.subjects || {};
   
-  // 3. Effect: Set default subject when Exam changes
   useEffect(() => {
     const firstSubjectKey = Object.keys(currentSubjects)[0];
     if (firstSubjectKey) {
@@ -204,7 +203,6 @@ const App = () => {
     }
   }, [activeExamKey]);
 
-  // Fallback if activeSubject is null or invalid for current exam
   const validActiveSubject = (activeSubject && currentSubjects[activeSubject]) 
     ? activeSubject 
     : Object.keys(currentSubjects)[0];
@@ -214,7 +212,6 @@ const App = () => {
 
   const toggleSidebar = () => setSidebarOpen(!isSidebarOpen);
 
-  // 4. Update Search Logic to only search within the ACTIVE EXAM
   const displayedContent = useMemo(() => {
     if (searchQuery.trim().length > 0) {
       const results = [];
@@ -257,7 +254,7 @@ const App = () => {
                <button onClick={toggleSidebar} className="p-2 bg-gray-100 rounded-full"><X className="w-6 h-6 text-gray-600" /></button>
             </div>
 
-            {/* --- NEW TAB SWITCHER --- */}
+            {/* TAB SWITCHER */}
             <div className="mb-6 bg-gray-200 p-1 rounded-xl flex gap-1">
               {Object.entries(syllabusData).map(([key, data]) => (
                 <button
@@ -273,6 +270,22 @@ const App = () => {
                 </button>
               ))}
             </div>
+
+            {/* --- NEW BUTTON: REVIEW MISTAKES --- */}
+            <button 
+              onClick={() => { navigate('/mistakes'); if(window.innerWidth < 1024) setSidebarOpen(false); }}
+              className="w-full mb-6 flex items-center gap-3 p-3.5 rounded-2xl bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-lg shadow-orange-200 hover:shadow-orange-300 transform hover:-translate-y-0.5 transition-all group"
+            >
+              <div className="bg-white/20 p-2 rounded-xl group-hover:rotate-12 transition-transform">
+                <AlertOctagon className="w-5 h-5 text-white" />
+              </div>
+              <div className="text-left">
+                <span className="block text-xs font-medium text-orange-100 uppercase tracking-wide">Weak Areas</span>
+                <span className="block font-bold text-sm">Review Mistakes</span>
+              </div>
+              <RefreshCcw className="w-4 h-4 ml-auto opacity-60 group-hover:opacity-100 group-hover:rotate-180 transition-all" />
+            </button>
+            {/* ----------------------------------- */}
 
             <div className="space-y-2">
               <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 px-2">Subjects</h3>
@@ -371,6 +384,9 @@ const AppWrapper = () => {
             <Route path="/login" element={<LoginPage />} />
             <Route path="/" element={<App />} />
             <Route path="/quiz/:topic" element={<QuizPage />} />
+            {/* --- NEW ROUTE --- */}
+            <Route path="/mistakes" element={<MistakesPage />} />
+            {/* ----------------- */}
             <Route path="/leaderboard" element={<LeaderboardPage />} />
             <Route path="/history" element={<HistoryPage />} />
             <Route path="*" element={<NotFound />} />
