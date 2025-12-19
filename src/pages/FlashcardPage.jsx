@@ -45,12 +45,13 @@ const FlashcardPage = () => {
       if (Array.isArray(data) && data.length > 0) {
         setCards(data);
       } else {
-        throw new Error("No data received from AI");
+        throw new Error("No data");
       }
     } catch (e) {
-      console.error("Flashcard Error:", e);
-      // We don't alert immediately to avoid blocking UI, we just render an error state or redirect
-      // alert("AI is busy. Please try reloading.");
+      console.error(e);
+      // Optional: Add error state here instead of alert
+      alert("AI is busy or high traffic. Please try reloading.");
+      navigate('/');
     } finally {
       setLoading(false);
     }
@@ -91,7 +92,7 @@ const FlashcardPage = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handleNext, handlePrev, handleFlip]);
 
-  // --- 1. LOADING VIEW ---
+  // --- LOADING VIEW ---
   if (loading) return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 flex flex-col items-center justify-center p-6 text-center relative overflow-hidden">
       {/* Background decoration */}
@@ -102,8 +103,7 @@ const FlashcardPage = () => {
         <div className="relative w-16 h-16 mx-auto mb-6">
           <div className="absolute inset-0 border-t-4 border-indigo-600 rounded-full animate-spin"></div>
           <div className="absolute inset-2 border-b-4 border-purple-500 rounded-full animate-spin reverse"></div>
-          {/* Use Sparkles if BrainCircuit is missing, or ensure import is correct */}
-          <Sparkles className="absolute inset-0 m-auto w-6 h-6 text-indigo-600 animate-pulse" />
+          <BrainCircuit className="absolute inset-0 m-auto w-6 h-6 text-indigo-600 animate-pulse" />
         </div>
         <h2 className="text-xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600 mb-2">
           Generating Flashcards
@@ -115,32 +115,8 @@ const FlashcardPage = () => {
     </div>
   );
 
-  // --- 2. SAFETY CHECK (This fixes the crash) ---
   const currentCard = cards[currentIndex];
 
-  if (!currentCard) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 p-4">
-        <div className="bg-white p-8 rounded-3xl shadow-xl text-center max-w-md">
-          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <RotateCw className="w-8 h-8 text-red-500" />
-          </div>
-          <h2 className="text-xl font-bold text-gray-900 mb-2">Unable to load cards</h2>
-          <p className="text-gray-500 mb-6">The AI couldn't generate cards for this topic right now. It might be due to high traffic.</p>
-          <div className="flex gap-3 justify-center">
-            <button onClick={() => navigate('/')} className="px-6 py-3 bg-gray-200 hover:bg-gray-300 rounded-xl font-bold text-gray-700 transition-colors">
-              Go Back
-            </button>
-            <button onClick={loadCards} className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 rounded-xl font-bold text-white transition-colors">
-              Try Again
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // --- 3. MAIN CONTENT ---
   return (
     <div className="min-h-screen bg-[#F0F4F8] flex flex-col font-sans selection:bg-indigo-100 selection:text-indigo-900 relative overflow-hidden">
       <SEO title={`${decodeURIComponent(topic)} Flashcards`} description={`Memorize ${decodeURIComponent(topic)} concepts.`} />
@@ -170,7 +146,7 @@ const FlashcardPage = () => {
           </span>
         </div>
 
-        <div className="w-[88px] flex justify-end"> 
+        <div className="w-[88px] flex justify-end"> {/* Spacer/Action */}
            <button onClick={loadCards} title="Regenerate" className="p-2 bg-white/70 backdrop-blur-md rounded-xl hover:bg-white text-slate-400 hover:text-indigo-600 transition-colors shadow-sm">
              <RefreshCw className="w-5 h-5" />
            </button>
@@ -203,9 +179,11 @@ const FlashcardPage = () => {
             <div className={`relative w-full h-full duration-500 preserve-3d transition-transform ${isFlipped ? 'rotate-y-180' : ''} shadow-2xl shadow-indigo-100/50 rounded-[2rem]`}>
               
               {/* --- FRONT SIDE --- */}
-              <div className="absolute inset-0 backface-hidden bg-white rounded-[2rem] border border-white/60 p-8 sm:p-12 flex flex-col items-center justify-center text-center overflow-hidden">
+              <div className={`absolute inset-0 backface-hidden bg-white rounded-[2rem] border border-white/60 p-8 sm:p-12 flex flex-col items-center justify-center text-center overflow-hidden ${isFlipped ? 'z-0' : 'z-10'}`}>
+                {/* Subtle Grid Pattern */}
                 <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'radial-gradient(#4f46e5 1px, transparent 1px)', backgroundSize: '24px 24px' }}></div>
                 
+                {/* Reference Tag */}
                 {currentCard.reference && (
                   <div className="absolute top-6 right-6 inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-50 text-indigo-600 rounded-full text-[10px] font-bold uppercase tracking-wider border border-indigo-100/50">
                     <BookOpen className="w-3 h-3" /> {currentCard.reference}
@@ -224,7 +202,8 @@ const FlashcardPage = () => {
               </div>
 
               {/* --- BACK SIDE --- */}
-              <div className="absolute inset-0 backface-hidden rotate-y-180 bg-gradient-to-br from-indigo-600 via-violet-600 to-purple-600 rounded-[2rem] p-8 sm:p-12 flex flex-col items-center justify-center text-center text-white overflow-hidden shadow-inner">
+              <div className={`absolute inset-0 backface-hidden rotate-y-180 bg-gradient-to-br from-indigo-600 via-violet-600 to-purple-600 rounded-[2rem] p-8 sm:p-12 flex flex-col items-center justify-center text-center text-white overflow-hidden shadow-inner ${isFlipped ? 'z-10' : 'z-0'}`}>
+                 {/* Decorative circles */}
                  <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2"></div>
                  <div className="absolute bottom-0 left-0 w-40 h-40 bg-black/10 rounded-full blur-2xl translate-y-1/2 -translate-x-1/2"></div>
 
