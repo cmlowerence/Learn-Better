@@ -1,10 +1,10 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async'; 
-import { syllabusData } from './syllabusData';
+import { syllabusData } from './syllabusData'; // Ensure path is correct
 import QuizPage from './QuizPage';
 import MistakesPage from './pages/MistakesPage';
-import FlashcaedPage from './pages/FlashcardPage';
+import FlashcardPage from './pages/FlashcardPage'; // FIX: Corrected Typos
 import NotFound from './pages/NotFound';
 import LoginPage from './pages/LoginPage';
 import LeaderboardPage from './pages/LeaderboardPage';
@@ -83,27 +83,31 @@ const ResourceButton = ({ type, topic, compact = false }) => {
     label = "Quiz";
     ariaLabel = `Start AI Quiz for ${topic}`;
     colorClass = "text-purple-600 bg-purple-50 hover:bg-purple-100 border-purple-200";
-  }else if (type === "flashcard") {
-    // New Flashcard Logic
+  } else if (type === "flashcard") {
     IconComp = LayoutGrid;
     label = "Flashcards";
     ariaLabel = `Study Flashcards for ${topic}`;
     colorClass = "text-pink-600 bg-pink-50 hover:bg-pink-100 border-pink-200";
   }
 
+  // FIX: Handle both Quiz and Flashcard navigation here
   const handleClick = (e) => {
     e.stopPropagation();
     if (type === 'quiz') navigate(`/quiz/${encodeURIComponent(topic)}`);
+    if (type === 'flashcard') navigate(`/flashcards/${encodeURIComponent(topic)}`);
   };
 
+  // Compact View (Icon only)
   if (compact) {
-    if (type === 'quiz') {
+    // If it's an internal route (Quiz or Flashcard), use button with onClick
+    if (type === 'quiz' || type === 'flashcard') {
       return (
-        <button onClick={handleClick} aria-label={ariaLabel} className={`p-2 rounded-xl transition-all hover:scale-110 ${colorClass.replace('bg-', 'hover:bg-').split(' ')[0]} hover:bg-opacity-10`} title={`Take AI Quiz on ${topic}`}>
+        <button onClick={handleClick} aria-label={ariaLabel} className={`p-2 rounded-xl transition-all hover:scale-110 ${colorClass.replace('bg-', 'hover:bg-').split(' ')[0]} hover:bg-opacity-10`} title={ariaLabel}>
           <IconComp className="w-4 h-4" />
         </button>
       )
     }
+    // External links use <a>
     return (
         <a href={url} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} aria-label={ariaLabel} className={`p-2 rounded-xl transition-all hover:scale-110 ${colorClass.replace('bg-', 'hover:bg-').split(' ')[0]} hover:bg-opacity-10`} title={`Search ${topic}`}>
           <IconComp className="w-4 h-4" />
@@ -111,7 +115,8 @@ const ResourceButton = ({ type, topic, compact = false }) => {
     );
   }
 
-  if (type === "quiz") {
+  // Full Button View
+  if (type === "quiz" || type === "flashcard") {
     return (
       <button onClick={handleClick} aria-label={ariaLabel} className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-bold transition-all hover:-translate-y-0.5 hover:shadow-sm ${colorClass}`}>
         <IconComp className="w-4 h-4" />
@@ -119,7 +124,6 @@ const ResourceButton = ({ type, topic, compact = false }) => {
       </button>
     );
   }
-  if (type === 'flashcard') navigate(`/flashcards/${encodeURIComponent(topic)}`);
 
   return (
     <a href={url} target="_blank" rel="noopener noreferrer" aria-label={ariaLabel} className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-bold transition-all hover:-translate-y-0.5 hover:shadow-sm ${colorClass}`}>
@@ -200,7 +204,7 @@ const App = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const { user } = useAuth();
   
-  const navigate = useNavigate(); // Used for the mistakes button navigation
+  const navigate = useNavigate(); 
 
   const currentExamData = syllabusData[activeExamKey];
   const currentSubjects = currentExamData?.subjects || {};
@@ -280,7 +284,7 @@ const App = () => {
               ))}
             </div>
 
-            {/* --- NEW BUTTON: REVIEW MISTAKES --- */}
+            {/* BUTTON: REVIEW MISTAKES */}
             <button 
               onClick={() => { navigate('/mistakes'); if(window.innerWidth < 1024) setSidebarOpen(false); }}
               className="w-full mb-6 flex items-center gap-3 p-3.5 rounded-2xl bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-lg shadow-orange-200 hover:shadow-orange-300 transform hover:-translate-y-0.5 transition-all group"
@@ -294,7 +298,6 @@ const App = () => {
               </div>
               <RefreshCcw className="w-4 h-4 ml-auto opacity-60 group-hover:opacity-100 group-hover:rotate-180 transition-all" />
             </button>
-            {/* ----------------------------------- */}
 
             <div className="space-y-2">
               <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 px-2">Subjects</h3>
