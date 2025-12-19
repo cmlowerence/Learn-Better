@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async'; 
-import { syllabusData } from './data/syllabusData'; // Check path (./data/syllabusData or ./syllabusData)
+import { syllabusData } from './syllabusData';
 import QuizPage from './QuizPage';
 import MistakesPage from './pages/MistakesPage';
 import FlashcaedPage from './pages/FlashcardPage';
