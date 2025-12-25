@@ -1,3 +1,4 @@
+// src/components/MathText.jsx
 import React, { useState, useEffect, useRef } from 'react';
 
 const MathText = ({ text, className = "" }) => {
