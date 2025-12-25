@@ -1,20 +1,26 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { generateFlashcards } from '../services/gemini';
-import { ArrowLeft, RefreshCw, Layers, Sparkles, BookOpen, RotateCw, Lightbulb, AlertCircle } from 'lucide-react';
+import { ArrowLeft, PlusCircle, Layers, Sparkles, BookOpen, RotateCw, Lightbulb, AlertCircle } from 'lucide-react';
 import SEO from '../components/SEO';
-import MathText from '../components/MathText'; 
+import MathText from '../components/MathText';
 
 const FlashcardPage = () => {
   const { topic } = useParams();
   const navigate = useNavigate();
   
   const [cards, setCards] = useState([]);
+  const [seenKeys, setSeenKeys] = useState(new Set()); // Track unique question signatures
   const [loading, setLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
   const [loadingTip, setLoadingTip] = useState("Curating key concepts...");
   const [error, setError] = useState(null);
+
+  // --- SWIPE REFS ---
+  const touchStartX = useRef(null);
+  const touchEndX = useRef(null);
+  const minSwipeDistance = 50; // px required to trigger swipe
 
   // --- CSS UTILITIES ---
   const CustomStyles = () => (
@@ -22,8 +28,6 @@ const FlashcardPage = () => {
       .perspective-1000 { perspective: 1000px; }
       .preserve-3d { transform-style: preserve-3d; }
       .backface-hidden { backface-visibility: hidden; -webkit-backface-visibility: hidden; }
-      
-      /* Hide scrollbar clean implementation */
       .no-scrollbar::-webkit-scrollbar { display: none; }
       .no-scrollbar { -ms-overflow-style: none;  scrollbar-width: none; }
     `}</style>
@@ -31,7 +35,8 @@ const FlashcardPage = () => {
 
   // --- DATA LOADING ---
   useEffect(() => {
-    loadCards();
+    // Initial load
+    loadCards(true);
   }, [topic]);
 
   useEffect(() => {
@@ -42,22 +47,47 @@ const FlashcardPage = () => {
     return () => clearInterval(interval);
   }, [loading]);
 
-  const loadCards = async () => {
+  const loadCards = async (isInitial = false) => {
     setLoading(true);
     setError(null);
-    setCards([]);
     try {
-      const data = await generateFlashcards(topic);
-      if (Array.isArray(data) && data.length > 0) {
-        setCards(data);
-        setCurrentIndex(0);
-        setIsFlipped(false);
+      // If initial, we might clear, but here we just append to avoid losing history unless topic changed
+      if (isInitial) {
+        setCards([]);
+        setSeenKeys(new Set());
+      }
+
+      const newBatch = await generateFlashcards(topic);
+      
+      if (Array.isArray(newBatch) && newBatch.length > 0) {
+        setCards(prevCards => {
+          // Filter out duplicates based on the 'front' text
+          const uniqueNewCards = newBatch.filter(card => {
+            const key = card.front.trim().toLowerCase();
+            if (seenKeys.has(key)) return false;
+            seenKeys.add(key);
+            return true;
+          });
+
+          // If we found no new cards (rare, but possible if API repeats), just return prev
+          if (uniqueNewCards.length === 0 && prevCards.length > 0) {
+             return prevCards;
+          }
+          
+          return [...prevCards, ...uniqueNewCards];
+        });
+
+        // If it was a fresh load, reset index
+        if (isInitial) {
+            setCurrentIndex(0);
+            setIsFlipped(false);
+        }
       } else {
-        throw new Error("No data received");
+        if (isInitial) throw new Error("No data received");
       }
     } catch (e) {
       console.error(e);
-      setError("Failed to load cards. Please try again.");
+      if (isInitial) setError("Failed to load cards. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -67,7 +97,11 @@ const FlashcardPage = () => {
   const handleNext = useCallback(() => {
     if (loading || cards.length === 0) return;
     setIsFlipped(false);
-    setTimeout(() => setCurrentIndex((prev) => (prev + 1) % cards.length), 150);
+    setTimeout(() => {
+        // Stop at the end? Or loop? 
+        // Let's loop for now, but if we are at the end, maybe suggest loading more?
+        setCurrentIndex((prev) => (prev + 1) % cards.length);
+    }, 150);
   }, [cards.length, loading]);
 
   const handlePrev = useCallback(() => {
@@ -79,6 +113,30 @@ const FlashcardPage = () => {
   const handleFlip = useCallback(() => {
     if (!loading) setIsFlipped(prev => !prev);
   }, [loading]);
+
+  // --- SWIPE LOGIC ---
+  const onTouchStart = (e) => {
+    touchEndX.current = null;
+    touchStartX.current = e.targetTouches[0].clientX;
+  };
+
+  const onTouchMove = (e) => {
+    touchEndX.current = e.targetTouches[0].clientX;
+  };
+
+  const onTouchEnd = () => {
+    if (!touchStartX.current || !touchEndX.current) return;
+    
+    const distance = touchStartX.current - touchEndX.current;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+
+    if (isLeftSwipe) {
+      handleNext();
+    } else if (isRightSwipe) {
+      handlePrev();
+    }
+  };
 
   // --- KEYBOARD SUPPORT ---
   useEffect(() => {
@@ -114,13 +172,14 @@ const FlashcardPage = () => {
       <AlertCircle className="w-10 h-10 text-red-500 mb-4" />
       <h3 className="text-lg font-bold text-red-900">Content Unavailable</h3>
       <p className="text-sm text-red-600 mb-6">We couldn't generate cards right now.</p>
-      <button onClick={loadCards} className="px-6 py-2 bg-red-600 text-white rounded-xl font-bold text-sm hover:bg-red-700 transition-colors">
+      <button onClick={() => loadCards(true)} className="px-6 py-2 bg-red-600 text-white rounded-xl font-bold text-sm hover:bg-red-700 transition-colors">
         Try Again
       </button>
     </div>
   );
 
-  const currentCard = cards[currentIndex];
+  // Safe access to current card
+  const currentCard = cards && cards.length > 0 ? cards[currentIndex] : null;
 
   return (
     <div className="min-h-screen bg-[#F0F4F8] flex flex-col font-sans relative overflow-hidden">
@@ -136,8 +195,15 @@ const FlashcardPage = () => {
           <h1 className="text-lg font-extrabold text-slate-800 truncate max-w-[200px]">{decodeURIComponent(topic)}</h1>
           <span className="text-[10px] font-bold text-indigo-500 bg-indigo-50 px-2 py-0.5 rounded-full">FLASHCARDS</span>
         </div>
-        <button onClick={loadCards} className="p-2 bg-white/70 backdrop-blur-md rounded-xl shadow-sm text-slate-500 hover:text-indigo-600 hover:bg-white transition-colors">
-           <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
+        
+        {/* REFRESH / LOAD MORE BUTTON */}
+        <button 
+            onClick={() => loadCards(false)} 
+            disabled={loading}
+            className="flex items-center gap-2 px-3 py-2 bg-white/70 backdrop-blur-md rounded-xl shadow-sm text-slate-500 hover:text-indigo-600 hover:bg-white transition-colors"
+        >
+           <span className="hidden sm:inline text-xs font-bold">Load New</span>
+           <PlusCircle className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
         </button>
       </header>
 
@@ -148,7 +214,7 @@ const FlashcardPage = () => {
           
           {/* Progress */}
           <div className="flex justify-between items-end mb-4 px-2 text-slate-500 font-bold text-sm h-6">
-            {!loading && !error && (
+            {!loading && !error && currentCard && (
               <div className="flex items-center gap-2 animate-fade-in">
                  <Layers className="w-4 h-4 text-indigo-500" /> {currentIndex + 1} / {cards.length}
               </div>
@@ -158,14 +224,17 @@ const FlashcardPage = () => {
 
           {/* CARD CONTAINER */}
           <div 
+            onTouchStart={onTouchStart}
+            onTouchMove={onTouchMove}
+            onTouchEnd={onTouchEnd}
             onClick={!loading && !error ? handleFlip : undefined}
             className={`relative w-full aspect-[4/3] sm:aspect-[16/9] ${(!loading && !error) ? 'cursor-pointer' : ''}`}
           >
-            {loading ? (
+            {(loading && cards.length === 0) ? (
               <SkeletonCard />
             ) : error ? (
               <ErrorCard />
-            ) : (
+            ) : currentCard ? (
               <div className={`relative w-full h-full duration-500 preserve-3d transition-all ${isFlipped ? '[transform:rotateY(180deg)]' : ''}`}>
                 
                 {/* --- FRONT SIDE --- */}
@@ -174,7 +243,6 @@ const FlashcardPage = () => {
                   style={{ zIndex: isFlipped ? 0 : 10 }}
                 >
                   <div className="w-full h-full flex flex-col p-6 sm:p-8">
-                    {/* Top */}
                     <div className="flex justify-between items-start shrink-0 mb-2">
                        <div className="opacity-[0.1] text-indigo-600"><Sparkles className="w-6 h-6" /></div>
                        {currentCard.reference && (
@@ -184,23 +252,18 @@ const FlashcardPage = () => {
                       )}
                     </div>
 
-                    {/* Middle - Front Content */}
                     <div className="flex-1 w-full flex flex-col overflow-y-auto no-scrollbar my-2">
                       <h3 className="text-lg sm:text-2xl md:text-3xl font-bold text-slate-800 leading-snug text-center select-none my-auto">
-                        {/* 2. REPLACED TEXT WITH MATHTEXT COMPONENT */}
                         <MathText text={currentCard.front} />
                       </h3>
                     </div>
 
-                    {/* Bottom */}
                     <div className="mt-auto shrink-0 pt-4 flex items-center justify-center gap-2 text-xs font-bold text-indigo-400 uppercase tracking-widest opacity-60">
-                      <RotateCw className="w-3 h-3" /> Click to Flip
+                      <RotateCw className="w-3 h-3" /> Click to Flip or Swipe
                     </div>
                   </div>
-                  
                   <div className="absolute inset-0 opacity-[0.03] pointer-events-none -z-10" style={{ backgroundImage: 'radial-gradient(#4f46e5 1px, transparent 1px)', backgroundSize: '24px 24px' }}></div>
                 </div>
-
 
                 {/* --- BACK SIDE --- */}
                 <div 
@@ -208,22 +271,18 @@ const FlashcardPage = () => {
                   style={{ zIndex: isFlipped ? 10 : 0 }}
                 >
                    <div className="w-full h-full flex flex-col p-6 sm:p-8 text-white">
-                      {/* Top */}
                       <div className="shrink-0 mb-4 flex justify-start">
                         <div className="bg-white/10 p-2 rounded-full backdrop-blur-sm text-indigo-100">
                           <Lightbulb className="w-5 h-5" />
                         </div>
                       </div>
 
-                      {/* Middle - Back Content */}
                       <div className="flex-1 w-full flex flex-col overflow-y-auto no-scrollbar my-2">
                          <p className="text-lg sm:text-xl md:text-2xl font-medium leading-relaxed text-center select-none my-auto">
-                           {/* 3. REPLACED TEXT WITH MATHTEXT COMPONENT */}
                            <MathText text={currentCard.back} />
                          </p>
                       </div>
 
-                      {/* Bottom */}
                       <div className="mt-auto shrink-0 pt-4 text-center">
                         <span className="text-[10px] font-bold text-indigo-200 uppercase tracking-widest opacity-80 border-t border-indigo-400/30 pt-4 px-8">
                           Answer
@@ -233,7 +292,7 @@ const FlashcardPage = () => {
                 </div>
 
               </div>
-            )}
+            ) : null}
           </div>
         </div>
 
@@ -264,7 +323,6 @@ const FlashcardPage = () => {
             <ArrowLeft className="w-6 h-6 rotate-180 text-slate-400" />
           </button>
         </div>
-
       </main>
     </div>
   );
