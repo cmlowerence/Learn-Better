@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { generateFlashcards } from '../services/gemini';
 import { ArrowLeft, RefreshCw, Layers, Sparkles, BookOpen, RotateCw, Lightbulb, AlertCircle } from 'lucide-react';
 import SEO from '../components/SEO';
+import MathText from '../components/MathText'; 
 
 const FlashcardPage = () => {
   const { topic } = useParams();
@@ -66,7 +67,6 @@ const FlashcardPage = () => {
   const handleNext = useCallback(() => {
     if (loading || cards.length === 0) return;
     setIsFlipped(false);
-    // Small delay to allow flip animation to reset before changing content
     setTimeout(() => setCurrentIndex((prev) => (prev + 1) % cards.length), 150);
   }, [cards.length, loading]);
 
@@ -171,7 +171,6 @@ const FlashcardPage = () => {
                 {/* --- FRONT SIDE --- */}
                 <div 
                   className="absolute inset-0 backface-hidden bg-white rounded-[2rem] border border-white/60 shadow-xl overflow-hidden"
-                  // Z-INDEX FIX: Force inactive side to be physically behind
                   style={{ zIndex: isFlipped ? 0 : 10 }}
                 >
                   <div className="w-full h-full flex flex-col p-6 sm:p-8">
@@ -185,11 +184,11 @@ const FlashcardPage = () => {
                       )}
                     </div>
 
-                    {/* Middle - FIXED SCROLLING & CENTERING */}
+                    {/* Middle - Front Content */}
                     <div className="flex-1 w-full flex flex-col overflow-y-auto no-scrollbar my-2">
-                      {/* 'my-auto' is the magic fix: centers if small, scrolls if big, never clips top */}
                       <h3 className="text-lg sm:text-2xl md:text-3xl font-bold text-slate-800 leading-snug text-center select-none my-auto">
-                        {currentCard.front}
+                        {/* 2. REPLACED TEXT WITH MATHTEXT COMPONENT */}
+                        <MathText text={currentCard.front} />
                       </h3>
                     </div>
 
@@ -206,7 +205,6 @@ const FlashcardPage = () => {
                 {/* --- BACK SIDE --- */}
                 <div 
                   className="absolute inset-0 backface-hidden [transform:rotateY(180deg)] bg-gradient-to-br from-indigo-600 to-purple-600 rounded-[2rem] shadow-xl overflow-hidden"
-                  // Z-INDEX FIX: Force inactive side to be physically behind
                   style={{ zIndex: isFlipped ? 10 : 0 }}
                 >
                    <div className="w-full h-full flex flex-col p-6 sm:p-8 text-white">
@@ -217,11 +215,11 @@ const FlashcardPage = () => {
                         </div>
                       </div>
 
-                      {/* Middle - FIXED SCROLLING & CENTERING */}
+                      {/* Middle - Back Content */}
                       <div className="flex-1 w-full flex flex-col overflow-y-auto no-scrollbar my-2">
-                         {/* 'my-auto' ensures vertical centering without top-clipping on overflow */}
                          <p className="text-lg sm:text-xl md:text-2xl font-medium leading-relaxed text-center select-none my-auto">
-                           {currentCard.back}
+                           {/* 3. REPLACED TEXT WITH MATHTEXT COMPONENT */}
+                           <MathText text={currentCard.back} />
                          </p>
                       </div>
 
