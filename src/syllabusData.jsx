@@ -457,7 +457,7 @@ export const syllabusData = {
         ]
       }
     }
-  }
+  },
   // ============================================
   // TAB 3: AFCAT 2026 (Air Force Common Admission Test)
   // ============================================
