@@ -11,7 +11,12 @@ import {
   Users,       // Admin Aptitude
   Languages,   // Language Competency
   BookOpen,     // General Awareness
-  FileText      // Acts/Rules
+  FileText,     // Acts/Rules
+  Plane,
+  Book,
+  Activity,
+  Puzzle,
+  CPU
 } from 'lucide-react';
 
 export const syllabusData = {
