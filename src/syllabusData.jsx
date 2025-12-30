@@ -453,4 +453,220 @@ export const syllabusData = {
       }
     }
   }
+  // ============================================
+  // TAB 3: AFCAT 2026 (Air Force Common Admission Test)
+  // ============================================
+  afcat_2026: {
+    label: "AFCAT 2026",
+    subjects: {
+      overview: {
+        title: "AFCAT Exam Overview",
+        icon: Plane,
+        color: "text-sky-600",
+        bgColor: "bg-sky-100",
+        sections: [
+          {
+            id: "afcat_overview_1",
+            title: "Exam Structure",
+            topics: [
+              "Online Objective Type Examination",
+              "Total Questions: 100",
+              "Total Marks: 300",
+              "Time Duration: 2 Hours",
+              "Negative Marking: -1 for each incorrect answer",
+              "Sections: General Awareness, English, Numerical Ability, Reasoning & Military Aptitude",
+              "EKT applicable only for Technical Branch candidates"
+            ]
+          }
+        ]
+      },
+
+      general_awareness: {
+        title: "General Awareness",
+        icon: Globe,
+        color: "text-indigo-600",
+        bgColor: "bg-indigo-100",
+        sections: [
+          {
+            id: "afcat_ga_1",
+            title: "Static General Knowledge",
+            topics: [
+              "Indian History (Ancient, Medieval, Modern)",
+              "Indian Geography (Physical, Economic, Political)",
+              "Indian Polity & Constitution",
+              "Indian Economy (Basic Concepts)",
+              "Environment & Ecology",
+              "Science & Technology (General Awareness level)",
+              "Defence Terminology & Indian Armed Forces",
+              "Space, Nuclear & Missile Programs of India"
+            ]
+          },
+          {
+            id: "afcat_ga_2",
+            title: "Current Affairs",
+            topics: [
+              "National & International Current Affairs",
+              "Sports, Awards & Honors",
+              "Defence Exercises & Military Operations",
+              "Important Appointments",
+              "Government Schemes & Policies"
+            ]
+          }
+        ]
+      },
+
+      english: {
+        title: "Verbal Ability in English",
+        icon: Book,
+        color: "text-emerald-600",
+        bgColor: "bg-emerald-100",
+        sections: [
+          {
+            id: "afcat_eng_1",
+            title: "Grammar & Usage",
+            topics: [
+              "Spotting Errors",
+              "Sentence Improvement",
+              "Subject-Verb Agreement",
+              "Tenses & Voice",
+              "Articles & Prepositions",
+              "Vocabulary Usage"
+            ]
+          },
+          {
+            id: "afcat_eng_2",
+            title: "Comprehension & Vocabulary",
+            topics: [
+              "Reading Comprehension",
+              "Synonyms & Antonyms",
+              "Idioms & Phrases",
+              "One Word Substitution",
+              "Sentence Completion",
+              "Para Jumbles"
+            ]
+          }
+        ]
+      },
+
+      numerical_ability: {
+        title: "Numerical Ability",
+        icon: Activity,
+        color: "text-orange-600",
+        bgColor: "bg-orange-100",
+        sections: [
+          {
+            id: "afcat_math_1",
+            title: "Arithmetic Fundamentals",
+            topics: [
+              "Number System",
+              "Decimal & Fractions",
+              "LCM & HCF",
+              "Ratio & Proportion",
+              "Percentages",
+              "Average"
+            ]
+          },
+          {
+            id: "afcat_math_2",
+            title: "Applied Mathematics",
+            topics: [
+              "Time & Work",
+              "Time, Speed & Distance",
+              "Profit & Loss",
+              "Simple & Compound Interest",
+              "Mensuration (2D & 3D)",
+              "Data Interpretation (Tables & Charts)"
+            ]
+          }
+        ]
+      },
+
+      reasoning: {
+        title: "Reasoning & Military Aptitude",
+        icon: Puzzle,
+        color: "text-pink-600",
+        bgColor: "bg-pink-100",
+        sections: [
+          {
+            id: "afcat_res_1",
+            title: "Verbal Reasoning",
+            topics: [
+              "Analogies",
+              "Classification",
+              "Series Completion",
+              "Blood Relations",
+              "Direction Sense",
+              "Coding-Decoding",
+              "Logical Venn Diagrams"
+            ]
+          },
+          {
+            id: "afcat_res_2",
+            title: "Non-Verbal & Spatial Ability",
+            topics: [
+              "Mirror & Water Images",
+              "Paper Folding & Cutting",
+              "Embedded Figures",
+              "Figure Matrix",
+              "Cube & Dice Problems"
+            ]
+          }
+        ]
+      },
+
+      ekt: {
+        title: "Engineering Knowledge Test (EKT)",
+        icon: Cpu,
+        color: "text-red-600",
+        bgColor: "bg-red-100",
+        sections: [
+          {
+            id: "afcat_ekt_1",
+            title: "Mechanical Engineering",
+            topics: [
+              "Engineering Mechanics",
+              "Thermodynamics",
+              "Strength of Materials",
+              "Theory of Machines",
+              "Production Engineering"
+            ]
+          },
+          {
+            id: "afcat_ekt_2",
+            title: "Electrical & Electronics Engineering",
+            topics: [
+              "Electrical Circuits & Networks",
+              "Electrical Machines",
+              "Power Systems",
+              "Control Systems",
+              "Analog & Digital Electronics"
+            ]
+          },
+          {
+            id: "afcat_ekt_3",
+            title: "Computer Science Engineering",
+            topics: [
+              "Data Structures",
+              "Algorithms",
+              "Operating Systems",
+              "Computer Networks",
+              "Database Management Systems",
+              "Software Engineering"
+            ]
+          },
+          {
+            id: "afcat_ekt_4",
+            title: "Electronics & Communication Engineering",
+            topics: [
+              "Signals & Systems",
+              "Analog Communication",
+              "Digital Communication",
+              "Microprocessors & Microcontrollers",
+              "Electromagnetic Theory"
+            ]
+          }
+        ]
+      }
+    }
+}
 };
