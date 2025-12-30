@@ -16,7 +16,7 @@ import {
   Book,
   Activity,
   Puzzle,
-  CPU
+  Cpu
 } from 'lucide-react';
 
 export const syllabusData = {
